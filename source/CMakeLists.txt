@@ -10,6 +10,3 @@ include_directories("../third_party")
 target_include_directories(RayTracing PUBLIC include)
 
 target_link_libraries(RayTracing glm)
-
-
-

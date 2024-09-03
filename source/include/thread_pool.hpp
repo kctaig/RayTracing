@@ -3,7 +3,8 @@
 #include <vector>
 #include <thread>
 #include <list>
-#include <mutex>
+#include <spin_lock.hpp>
+#include <functional>
 
 class Task
 {
@@ -11,19 +12,37 @@ public:
     virtual void run() = 0;
 };
 
+// Í¼ĞÎ²¢ĞĞäÖÈ¾
+class Parallel_For_Task : public Task {
+public:
+    Parallel_For_Task(size_t x, size_t y, const std::function<void(size_t, size_t)>& lambda) :x(x), y(y), lambda(lambda) {}
+
+    void run()override { lambda(x, y); }
+private:
+    size_t x, y;
+    std::function<void(size_t, size_t)> lambda;
+};
+
+// ½öÖ§³ÖÖ÷Ïß³ÌÌí¼ÓÈÎÎñ
 class Thread_Poll
 {
 public:
-    static void worker_thread(Thread_Poll *master); // çº¿ç¨‹ä¸€ä¸ªé™æ€å·¥ä½œå‡½æ•°
+    // Ïß³ÌÒ»¸ö¾²Ì¬¹¤×÷º¯Êı£¬Ïß³Ì»á²»¶ÏµÄ»ñÈ¡ÈÎÎñ²¢Ö´ĞĞ
+    static void worker_thread(Thread_Poll *master); 
     Thread_Poll(size_t thread_num = 0);
     ~Thread_Poll();
-
-    void add_task(Task *task); // ä»»åŠ¡é˜Ÿåˆ—æ·»åŠ æ–°ä»»åŠ¡
-    Task *get_task();          // è·å–ä»»åŠ¡é˜Ÿåˆ—ä¸­çš„ä»»åŠ¡
+    // ²¢ĞĞµÄforÑ­»·
+    void parallel_for(size_t width, size_t height, const std::function<void(size_t, size_t)>& lambda);
+    // Ö÷Ïß³ÌµÈ´ıËùÓĞÈÎÎñÖ´ĞĞÍê³É
+    void wait() const; 
+    // ÈÎÎñ¶ÓÁĞÌí¼ÓĞÂÈÎÎñ
+    void add_task(Task *task); 
+    // µ±Ç°Ïß³Ì»ñÈ¡ÈÎÎñ¶ÓÁĞÖĞµÄÈÎÎñ
+    Task *get_task();          
 
 private:
-    bool alive;
-    std::vector<std::thread> threads; // çº¿ç¨‹å®ä¾‹ï¼Œå­˜å‚¨åœ¨vectorä¸­
-    std::list<Task *> tasks;          // ä»»åŠ¡é˜Ÿåˆ—
-    std::mutex lock;                  // é”
+    std::atomic<int> alive; 
+    std::vector<std::thread> threads; // Ïß³ÌÊı×é
+    std::list<Task *> tasks;           // ÈÎÎñ¶ÓÁĞ
+    Spin_Lock spin_lock;
 };

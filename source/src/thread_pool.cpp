@@ -1,65 +1,71 @@
 #include <thread_pool.hpp>
+#include <spin_lock.hpp>
+#include <thread>
+#include <functional>
 
-void Thread_Poll::worker_thread(Thread_Poll *master)
-{
-    while (master->alive)
-    {
-        Task *task = master->get_task();
-        if (task != nullptr)
-        {
+void Thread_Poll::worker_thread(Thread_Poll* master) {
+    while (master->alive == 1) {
+        Task *task = master->get_task(); // µ±Ç°Ïß³Ì´ÓÏß³Ì³ØÖĞµÄÈÎÎñ¶ÓÁĞÖĞ»ñÈ¡ÈÎÎñ
+        if (task != nullptr) {
             task->run();
-        }
-        else {
-            std::this_thread::yield();
+        } else {
+            std::this_thread::yield(); // µ±Ç°Ïß³ÌÖ÷¶¯ÈÃ³öCPU
         }
     }
 }
 
-Thread_Poll::Thread_Poll(size_t thread_num)
-{
-    alive = true;
-    // è‹¥çº¿ç¨‹æ•°ä¸º0ï¼Œåˆ™èµ‹å€¼ä¸ºCPUçš„çº¿ç¨‹æ•°
-    if (thread_num == 0)
-    {
+Thread_Poll::Thread_Poll(size_t thread_num) {
+    alive = 1;
+    // ÈôÏß³ÌÊıÎª0£¬Ôò¸³ÖµÎªCPUµÄÏß³ÌÊı
+    if (thread_num == 0) {
         thread_num = std::thread::hardware_concurrency();
     }
-    // åˆ›å»ºçº¿ç¨‹
-    for (size_t i = 0; i < thread_num; i++)
-    {
+    // Ïß³Ì³Ø´´½¨Ïß³Ì,²¢ÎªÏß³Ì·ÖÅä¹¤×÷º¯Êı worker_thread
+    // thisÊÇÖ¸Ïòµ±Ç°Ïß³Ì³ØµÄÖ¸Õë£¬Ëü½«±»´«µİ¸øworker_thread
+    for (size_t i = 0; i < thread_num; i++) {
         threads.push_back(std::thread(std::thread(Thread_Poll::worker_thread, this)));
     }
 }
 
-Thread_Poll::~Thread_Poll()
-{
-    while(!tasks.empty()){  // ç­‰å¾…æ‰€æœ‰ä»»åŠ¡ç»“æŸ
-        std::this_thread::yield(); // å½“å‰çº¿ç¨‹æ”¾å¼ƒå¤„ç†å™¨
-    } 
-    alive = false;
-    //  join(ï¼‰ç­‰å¾…çº¿ç¨‹æ‰§è¡Œç»“æŸ
-    for (auto &thread : threads)
-    {
+Thread_Poll::~Thread_Poll(){
+    wait(); // µÈ´ıËùÓĞÈÔÈÎÎñ±»Ö´ĞĞÍê³É
+    alive = 0; // ²»ÔÊĞíÏß³Ì»ñÈ¡ÈÎÎñ
+    //  join(£©µÈ´ıÏß³ÌÖ´ĞĞ½áÊø
+    for (auto& thread : threads) {
         thread.join();
     }
-    // æ¸…é™¤æ‰€æœ‰çº¿ç¨‹
+    // Çå³ıËùÓĞÏß³Ì
     threads.clear();
 }
 
-void Thread_Poll::add_task(Task *task)
-{
-    // è¿›å…¥add_taskå‡½æ•°ä¹‹åä¼šè‡ªåŠ¨è·å–é”ï¼Œå¹¶ä¸”åœ¨é€€å‡ºè¿™ä¸ªå‡½æ•°åé‡Šæ”¾è¿™ä¸ªé”
-    std::lock_guard<std::mutex> guard(lock);
+// Ö÷Ïß³ÌÌí¼Ó²¢ĞĞÈÎÎñ
+void Thread_Poll::parallel_for(size_t width, size_t height, const std::function<void(size_t, size_t)>& lambda) {
+    Guard guard(spin_lock);
+    for (size_t y = 0; y < height; y++) {
+        for (size_t x = 0; x < width; x++) {
+            tasks.push_back(new Parallel_For_Task(x, y, lambda));
+        }
+    }
+}
+
+void Thread_Poll::wait() const {
+    while (!tasks.empty()) {
+        std::this_thread::yield();
+    }
+}
+
+void Thread_Poll::add_task(Task *task){
+    Guard guard(spin_lock);
     tasks.push_back(task);
 }
 
-Task *Thread_Poll::get_task()
-{
-    std::lock_guard<std::mutex> guard(lock);
-    if (tasks.empty()) // åˆ¤æ–­äººä»»åŠ¡é˜Ÿåˆ—æ˜¯å¦ä¸ºç©º
-    {
+Task *Thread_Poll::get_task(){
+    Guard guard(spin_lock);
+    // ÅĞ¶ÏÈËÈÎÎñ¶ÓÁĞÊÇ·ñÎª¿Õ
+    if (tasks.empty()) {
         return nullptr;
     }
-    Task *task = tasks.front(); // è·å–ç¬¬ä¸€ä¸ªä»»åŠ¡
+    Task* task = tasks.front();  // »ñÈ¡µÚÒ»¸öÈÎÎñ
     tasks.pop_front();
     return task;
 }
