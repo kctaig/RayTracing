@@ -43,6 +43,7 @@ public:
 private:
     std::atomic<int> alive; 
     std::vector<std::thread> threads; // 线程数组
+    std::atomic<int> pending_task_count; 
     std::list<Task *> tasks;           // 任务队列
-    Spin_Lock spin_lock;
+    Spin_Lock spin_lock {};
 };

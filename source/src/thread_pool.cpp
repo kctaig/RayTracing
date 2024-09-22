@@ -8,6 +8,7 @@ void Thread_Poll::worker_thread(Thread_Poll* master) {
         Task *task = master->get_task(); // 当前线程从线程池中的任务队列中获取任务
         if (task != nullptr) {
             task->run();
+            master->pending_task_count--;
         } else {
             std::this_thread::yield(); // 当前线程主动让出CPU
         }
@@ -16,6 +17,7 @@ void Thread_Poll::worker_thread(Thread_Poll* master) {
 
 Thread_Poll::Thread_Poll(size_t thread_num) {
     alive = 1;
+    pending_task_count = 0;
     // 若线程数为0，则赋值为CPU的线程数
     if (thread_num == 0) {
         thread_num = std::thread::hardware_concurrency();
@@ -49,13 +51,14 @@ void Thread_Poll::parallel_for(size_t width, size_t height, const std::function<
 }
 
 void Thread_Poll::wait() const {
-    while (!tasks.empty()) {
+    while (pending_task_count > 0) {
         std::this_thread::yield();
     }
 }
 
 void Thread_Poll::add_task(Task *task){
     Guard guard(spin_lock);
+    pending_task_count++;
     tasks.push_back(task);
 }
 

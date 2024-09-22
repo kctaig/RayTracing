@@ -1,27 +1,37 @@
-#include <iostream>
-#include <thread_pool.hpp>
-#include "frame_buffer.hpp"
-
-#define CURRENT_DIR std::filesystem::path(__FILE__).parent_path()
-
-class simple_task : public Task {
-   public:
-    void run() override { std::cout << "hello world" << std::endl; }
-};
+#include "head_include.hpp"
+#include"camera.hpp"
+#include <scene.hpp>
+#include "sphere.hpp"
 
 int main() {
-    // 创建一个帧缓冲
-    Frame_Buffer frame_buffer(800, 600);
-    // 创建一个线程池
-    Thread_Poll thread_pool{};
-    // 添加并行任务
-    thread_pool.parallel_for(200, 100, [&](size_t x, size_t y)->void {
-        frame_buffer.set_pixel(x, y, { 0.2,0.5,0.7 }); 
-    });
-    // 主线程等待所有线程执行完成
-    thread_pool.wait();
 
-    frame_buffer.save_to_file(CURRENT_DIR/ "../output/image.ppm");
+    Scene scene;
+
+    // set image plane
+    scene.set_width(800);
+    scene.set_height(600);
+
+    // set camera
+    vec3 cam_pos = { 0,0,1 };
+    vec3 up = { 0,1,0 };
+    vec3 right = { 1,0,0 };
+    Camera cam(cam_pos, up, right);
+    cam.set_vfov(90);
+    cam.set_focal_length(1);
+    scene.set_cam(cam);
+
+    //set objects
+    Tri_Model tri_model;
+    const std::string file_dir = std::filesystem::path("D:/code/RayTracing/source/models/simple_dragon").string();
+    tri_model.make_mesh_by_obj(file_dir,"simple_dragon.obj");
+    //tri_model.print_model_info();
+    scene.add_tri_model(tri_model);
+
+    //Sphere s(vec3(0, 0, -1), 0.5);
+    //scene.add_sphere(s);
+
+    scene.render();
+
 
     return 0;
 }
