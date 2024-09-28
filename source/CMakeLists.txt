@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 file(GLOB_RECURSE source CONFIGURE_DEPENDS src/*.cpp include/*.hpp)
 
 #RayTracing 可执行文件将会由 source 变量中列出的所有源文件构建而成
-add_executable(RayTracing ${source} "src/scene.cpp")
+add_executable(RayTracing ${source})
 
 # 该目录和头文件拼接
 include_directories("../third_party")
