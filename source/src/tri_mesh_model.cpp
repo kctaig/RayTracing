@@ -1,6 +1,5 @@
 #include "tri_mesh_model.hpp"
 #include "head_include.hpp"
-
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
@@ -64,17 +63,50 @@ TriMeshModel::TriMeshModel(std::string fileNameDir, std::string fileName)
                     this->vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
                 }
             }
-            this->meshes.push_back(*mesh);
+            this->triangles.push_back(*mesh);
             mesh_vertex_offset += each_mesh_vertex_num;
         }
     }
 }
 
-void TriMeshModel::print_model_info()
+void TriMeshModel::intersection(const Ray& ray, PayLoad &payload, float& tMin, float& tMax) const
+{
+    for (size_t j = 0; j < triangles.size(); j++)
+    {
+        Mesh m = triangles[j];
+        vec3 v0 = vertices[m.indices[0]].pos;
+        vec3 v1 = vertices[m.indices[1]].pos;
+        vec3 v2 = vertices[m.indices[2]].pos;
+        vec3 E1 = v1 - v0;
+        vec3 E2 = v2 - v0;
+        vec3 T = ray.get_origin() - v0;
+        vec3 D = normalize(ray.get_dir());
+        vec3 P = cross(D, E2);
+        vec3 Q = cross(T, E1);
+        float p_e1 = dot(P, E1);
+        float t = dot(Q, E2) / p_e1;
+        float u = dot(P, T) / p_e1;
+        float v = dot(Q, D) / p_e1;
+
+        if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0)
+        {
+            //cout <<"valid: " << t << " " << u << " " << v << endl;
+            if (t < tMax)
+            {   
+                tMax = t;
+                payload.ishit = true;
+                payload.hitPoint = ray.at(tMax);
+                payload.uv = { u,v };
+            }
+        }
+    }
+}
+
+void TriMeshModel::modelInfo()
 {
     // 调试信息
     cout << "# of vertices  : " << (this->vertices.size()) << endl;
-    cout << "# of meshes   : " << (this->meshes.size()) << endl;
+    cout << "# of meshes   : " << (this->triangles.size()) << endl;
 
     // 打印顶点
     cout << "start print vertices: \n";
@@ -86,11 +118,11 @@ void TriMeshModel::print_model_info()
 
     // 打印mesh
     cout << "start print meshes: \n";
-    for (size_t j = 0; j < this->meshes.size(); j++)
+    for (size_t j = 0; j < this->triangles.size(); j++)
     {
         cout << "mesh " << j << " : ";
-        cout << this->meshes[j].indices[0] << " ";
-        cout << this->meshes[j].indices[1] << " ";
-        cout << this->meshes[j].indices[2] << endl;
+        cout << this->triangles[j].indices[0] << " ";
+        cout << this->triangles[j].indices[1] << " ";
+        cout << this->triangles[j].indices[2] << endl;
     }
 }

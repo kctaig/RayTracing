@@ -17,12 +17,14 @@ void Scene::renderScene()
     auto thread_pool = std::make_shared<Thread_Poll>();
     thread_pool->parallel_for(w, h, [&](size_t x, size_t y)
                               {
-                                vec3 color = renderPixel(x, y);
-                                cam.film->setPixel(x, y, color);
-                                count++;
-                                if (count % w == 0) {
-                                    cout << static_cast<float>(count) / (w * h) << endl;
-                                } });
+            PayLoad payload = renderPixel(x, y);
+            vec3 color = { 0,0,0 };
+            if (payload.ishit) color = glm::vec3{payload.uv, 1 - payload.uv[0] - payload.uv[1]};
+            cam.film->setPixel(x, y, color);
+            count++;
+            if (count % w == 0) {
+                cout << static_cast<float>(count) / (w * h) << endl;
+            } });
     thread_pool->wait();
 
 #elif 0
@@ -46,46 +48,17 @@ void Scene::renderScene()
     cam.film->saveToFile(CURRENT_DIR / "../../output/image.ppm");
 }
 
-vec3 Scene::renderPixel(size_t x, size_t y)
+PayLoad Scene::renderPixel(size_t x, size_t y)
 {
     Ray ray = cam.generateRay({x, y}, {0.5, 0.5});
     float tMin = 0.f;
-    float tNear = INFINITY;
-    auto color = vec3(0);
-    for (size_t i = 0; i < models.size(); i++)
-    {
-        vector<Vertex> vertices = models[i].vertices;
-        vector<Mesh> meshes = models[i].meshes;
-        for (size_t j = 0; j < meshes.size(); j++)
-        {
-            Mesh m = meshes[j];
-            // 光线与三角面片的求交
-            vec3 v0 = vertices[m.indices[0]].pos;
-            vec3 v1 = vertices[m.indices[1]].pos;
-            vec3 v2 = vertices[m.indices[2]].pos;
-            vec3 E1 = v1 - v0;
-            vec3 E2 = v2 - v0;
-            vec3 T = ray.get_origin() - v0;
-            vec3 D = normalize(ray.get_dir());
-            vec3 P = cross(D, E2);
-            vec3 Q = cross(T, E1);
-            float p_e1 = dot(P, E1);
-            float t = dot(Q, E2) / p_e1;
-            float u = dot(P, T) / p_e1;
-            float v = dot(Q, D) / p_e1;
-            
-            if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0)
-            {
-                //cout <<"valid: " << t << " " << u << " " << v << endl;
-                if (t < tNear)
-                {
-                    tNear = t;
-                    color = vec3(1.f,1.f,1.f);
-                }
-            }
-        }
+    float tMax = INFINITY;
+    PayLoad payload{};
+    for (size_t i = 0; i < models.size(); i++){
+        models[i]->intersection(ray, payload, tMin, tMax);
     }
 
+    /* 
     // 与场景中的sphere求交
     for (int i = 0; i < spheres.size(); i++)
     {
@@ -95,6 +68,7 @@ vec3 Scene::renderPixel(size_t x, size_t y)
             return color;
         }
     }
+    */
 
-    return color;
+    return payload;
 }

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "head_include.hpp"
+#include "Ray.hpp"
 
-class Vertex {
+class Vertex
+{
 
 public:
     vec3 pos;
@@ -10,16 +12,19 @@ public:
     vec3 color;
 };
 
-class Mesh {
+class Mesh
+{
 
 public:
     vector<size_t> indices;
 };
 
-class Model {
+class Model
+{
 
 public:
     Model() {}
-    vector<Vertex> vertices; // 模型顶点
-    vector<Mesh>meshes;    // 模型的面片
+    virtual void intersection(const Ray&, PayLoad&, float&, float&) const = 0;
+
+    vector<Vertex> vertices;
 };
