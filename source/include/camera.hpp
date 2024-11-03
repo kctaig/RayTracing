@@ -2,31 +2,24 @@
 
 #include "head_include.hpp"
 #include <ray.hpp>
+#include "film.hpp"
 
 class Camera
 {
 public:
 	Camera() {};
+	 
+	Camera(vec3 p, vec3 u, vec3 v, float vfov = 90) :pos(p), up(u), v(v), vfov(vfov) {};
 
-	Camera(vec3 pos, vec3 up, vec3 right) : pos(pos), up(up), right(right) {}
+	void generateMatrix();
 
-	Ray gen_primary_ray(float x, float y, float aspect_ratio) const;
+	Ray generateRay(const glm::ivec2 &pixelCoord, const glm::vec2 &offsets) const;
 
-	vec3 get_pos() const { return pos; }
-	float get_vfov() const { return vfov; }
-	float get_focal_length() const { return focal_length; }
-
-	void set_vfov(float deg) { vfov = deg; }
-	void set_focal_length(float f)
-	{
-		focal_length = f;
-		pos.z = f;
-	}
-
-private:
+	Film *film;
 	vec3 pos;
 	vec3 up;
-	vec3 right;
-	float vfov = 90;
-	float focal_length = 1;
+	vec3 v;
+	float vfov;
+	glm::mat4 camFromWorld;
+	glm::mat4 clipFromCam;
 };

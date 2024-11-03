@@ -1,17 +1,17 @@
-#include "tri_model.hpp"
-#include "tiny_obj_loader.h"
+#include "tri_mesh_model.hpp"
 #include "head_include.hpp"
 
 #define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader/tiny_obj_loader.h"
 
-bool Tri_Model::make_mesh_by_obj(std::string file_name_dir, std::string file_name)
+
+TriMeshModel::TriMeshModel(std::string fileNameDir, std::string fileName)
 {
-
     tinyobj::ObjReaderConfig reader_config;
-    reader_config.mtl_search_path = file_name_dir; // Path to material files
+    reader_config.mtl_search_path = fileNameDir; // Path to material files
     tinyobj::ObjReader reader;
 
-    if (!reader.ParseFromFile(file_name_dir + "/" + file_name, reader_config))
+    if (!reader.ParseFromFile(fileNameDir + "/" + fileName, reader_config))
     {
         if (!reader.Error().empty())
         {
@@ -37,7 +37,7 @@ bool Tri_Model::make_mesh_by_obj(std::string file_name_dir, std::string file_nam
         v->pos = v_pos;
         //! 验证cube模型可见性
         v->pos.z -= 3;
-        model.vertices.push_back(*v);
+        this->vertices.push_back(*v);
     }
 
     // 将模型数据保存到Model中
@@ -56,43 +56,41 @@ bool Tri_Model::make_mesh_by_obj(std::string file_name_dir, std::string file_nam
             {
                 idx = shapes[i].mesh.indices[mesh_vertex_offset + v];
                 mesh->indices[v] = idx.vertex_index; // 面片的的顶点索引
-                if (idx.normal_index >= 0 && idx.normal_index < model.vertices.size())
+                if (idx.normal_index >= 0 && idx.normal_index < this->vertices.size())
                 {
                     tinyobj::real_t nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
                     tinyobj::real_t ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
                     tinyobj::real_t nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
-                    model.vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
+                    this->vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
                 }
             }
-            model.meshes.push_back(*mesh);
+            this->meshes.push_back(*mesh);
             mesh_vertex_offset += each_mesh_vertex_num;
         }
     }
-    return true;
 }
 
-void Tri_Model::print_model_info()
+void TriMeshModel::print_model_info()
 {
-
     // 调试信息
-    cout << "# of vertices  : " << (model.vertices.size()) << endl;
-    cout << "# of meshes   : " << (model.meshes.size()) << endl;
+    cout << "# of vertices  : " << (this->vertices.size()) << endl;
+    cout << "# of meshes   : " << (this->meshes.size()) << endl;
 
     // 打印顶点
     cout << "start print vertices: \n";
-    for (size_t j = 0; j < model.vertices.size(); j++)
+    for (size_t j = 0; j < this->vertices.size(); j++)
     {
-        Vertex v = model.vertices[j];
+        Vertex v = this->vertices[j];
         cout << v.pos[0] << " " << v.pos[1] << " " << v.pos[2] << endl;
     }
 
     // 打印mesh
     cout << "start print meshes: \n";
-    for (size_t j = 0; j < model.meshes.size(); j++)
+    for (size_t j = 0; j < this->meshes.size(); j++)
     {
         cout << "mesh " << j << " : ";
-        cout << model.meshes[j].indices[0] << " ";
-        cout << model.meshes[j].indices[1] << " ";
-        cout << model.meshes[j].indices[2] << endl;
+        cout << this->meshes[j].indices[0] << " ";
+        cout << this->meshes[j].indices[1] << " ";
+        cout << this->meshes[j].indices[2] << endl;
     }
 }

@@ -2,17 +2,24 @@
 
 #include "head_include.hpp"
 
-struct Vertex {
+class Vertex {
+
+public:
     vec3 pos;
     vec3 normal;
     vec3 color;
 };
 
-struct Mesh {
+class Mesh {
+
+public:
     vector<size_t> indices;
 };
 
-struct Model {
+class Model {
+
+public:
+    Model() {}
     vector<Vertex> vertices; // 模型顶点
     vector<Mesh>meshes;    // 模型的面片
 };

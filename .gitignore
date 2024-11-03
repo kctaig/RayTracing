@@ -3,5 +3,7 @@
 ################################################################################
 
 /.vs
-/out/build/x64-Debug
 /.vscode
+/out/build/x64-Debug
+/build
+/cmake-build

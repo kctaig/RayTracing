@@ -1,11 +1,31 @@
 #include <camera.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 
-Ray Camera::gen_primary_ray(float x, float y, float aspect_ratio) const
+void Camera::generateMatrix()
 {
-    float v_half_height = tan(deg2rad(vfov / 2)) * focal_length;
-    float v_half_width = v_half_height * aspect_ratio;
-    float v_x = (2.0 * x - 1) * v_half_width;
-    float v_y = (2.0 * y - 1) * v_half_height;
-    vec3 ray_dir = vec3(v_x, v_y, pos.z - focal_length) - pos;
-    return Ray(pos, ray_dir);
+	auto w = film->width;
+	auto h = film->height;
+	auto aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+	//camFromWorld = glm::lookAt(pos, viewpoint, up);
+	clipFromCam = glm::perspective(
+		glm::radians(vfov),
+		aspectRatio,
+		1.f,
+		200.f
+	);
+}
+
+Ray Camera::generateRay(const glm::ivec2 &pixelCoord, const glm::vec2 &offsets) const
+{
+    auto ndc = (static_cast<glm::vec2>(pixelCoord) + offsets) / glm::vec2(film->width, film->height);
+    ndc.y = 1.f - ndc.y;
+    ndc = ndc * 2.f - 1.f;
+	auto worldCoord = glm::inverse(clipFromCam) * glm::vec4(ndc, 1, 1.f);
+	//auto worldCoord = glm::inverse(camFromWorld) * glm::inverse(clipFromCam) * glm::vec4(ndc, 0, 1.f);
+
+	//cout << "world: " << worldCoord.x << " " << worldCoord.y << " " << worldCoord.z << endl;
+
+	auto rayDir = normalize((vec3(worldCoord) - pos));
+    return Ray(pos, rayDir);
 }

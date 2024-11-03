@@ -1,61 +1,64 @@
 #include <scene.hpp>
-#include <frame_buffer.hpp>
 #include <thread_pool.hpp>
+#include <filesystem>
 #include <cmath>
+#include "log.hpp"
 
 #define CURRENT_DIR std::filesystem::path(__FILE__).parent_path()
 
-void Scene::render()
+void Scene::renderScene()
 {
-     std::atomic<int> count(0);
+    auto w = cam.film->width;
+    auto h = cam.film->height;
+    cam.generateMatrix();
+    std::atomic<int> count(0);
 
-    // 创建一个帧缓冲
-    Frame_Buffer *frame_buffer = new Frame_Buffer(image_width, image_height);
-    // 创建一个线程池
-    // auto thread_pool = std::make_shared<Thread_Poll>();
-    Thread_Poll thread_pool{};
-
-    // 添加并行任务
-    thread_pool.parallel_for(image_width, image_height, [&](size_t x, size_t y)
-                             {
-                                vec3 color = render_per_pixel(cam.get_pos(), x, y);
-                                frame_buffer->set_pixel(x, y, color);
+#if 1
+    auto thread_pool = std::make_shared<Thread_Poll>();
+    thread_pool->parallel_for(w, h, [&](size_t x, size_t y)
+                              {
+                                vec3 color = renderPixel(x, y);
+                                cam.film->setPixel(x, y, color);
                                 count++;
-                                if (count % image_width == 0) {
-                                    cout << static_cast<float>(count) / (image_width * image_height) << endl;
-                                } 
-        });
-    // 主线程等待所有线程执行完成
-    thread_pool.wait();
+                                if (count % w == 0) {
+                                    cout << static_cast<float>(count) / (w * h) << endl;
+                                } });
+    thread_pool->wait();
 
-    // for (size_t i = 0; i < get_width(); i++)
-    // {
-    //     for (size_t j = 0; j < get_height(); j++)
-    //     {
-    //         vec3 color = render_per_pixel(this->cam.get_pos(), i, j);
-    //         frame_buffer->set_pixel(i, j, color);
-    //     }
-    // }
-
-    frame_buffer->save_to_file(CURRENT_DIR / "../output/image.ppm");
+#elif 0
+    Logger logger("D:/code/RayTracing/output/dragon.log");
+    for (size_t i = 0; i < w; i++)
+    {
+        for (size_t j = 0; j < h; j++)
+        {
+            cout << "pixel: " <<i<<" "<< j << endl;
+            vec3 color = renderPixel(i, j);
+            cam.film->setPixel(i, j, color);
+            count++;
+            /*if (count % w == 0) {
+                cout << static_cast<float>(count) / (w * h) << endl;
+            }*/
+        }
+    }
+    logger.RestoreOriginalBuffers();
+#endif
+    
+    cam.film->saveToFile(CURRENT_DIR / "../../output/image.ppm");
 }
 
-vec3 Scene::render_per_pixel(vec3 p, size_t x, size_t y)
+vec3 Scene::renderPixel(size_t x, size_t y)
 {
-    Ray ray = cam.gen_primary_ray(((float)x + 0.5) / image_width, ((float)y + 0.5) / image_height, (float)image_width / image_height);
-    float t_min = 0;
-    float t_max = INFINITY;
-    vec3 unit_dir = normalize(ray.get_dir());
-    auto a = 0.5 * (unit_dir.y + 1.0);
-    vec3 color = (float)(1.0 - a) * vec3(1.0, 1.0, 1.0) + (float)a * vec3(0.5, 0.7, 1.0);
-
-    // 与场景中的tri_mesh求交
-    for (size_t i = 0; i < tri_models.size(); i++)
+    Ray ray = cam.generateRay({x, y}, {0.5, 0.5});
+    float tMin = 0.f;
+    float tNear = INFINITY;
+    auto color = vec3(0);
+    for (size_t i = 0; i < models.size(); i++)
     {
-        vector<Vertex> vertices = tri_models[i].get_model().vertices;
-        for (size_t j = 0; j < tri_models[i].get_model().meshes.size(); j++)
+        vector<Vertex> vertices = models[i].vertices;
+        vector<Mesh> meshes = models[i].meshes;
+        for (size_t j = 0; j < meshes.size(); j++)
         {
-            Mesh m = tri_models[i].get_model().meshes[j];
+            Mesh m = meshes[j];
             // 光线与三角面片的求交
             vec3 v0 = vertices[m.indices[0]].pos;
             vec3 v1 = vertices[m.indices[1]].pos;
@@ -70,12 +73,14 @@ vec3 Scene::render_per_pixel(vec3 p, size_t x, size_t y)
             float t = dot(Q, E2) / p_e1;
             float u = dot(P, T) / p_e1;
             float v = dot(Q, D) / p_e1;
-            if (t >= 0 && u >= 0 && v >= 0 && 1 - u - v >= 0)
+            
+            if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0)
             {
-                if (t < t_max)
+                //cout <<"valid: " << t << " " << u << " " << v << endl;
+                if (t < tNear)
                 {
-                    t_max = t;
-                    color = vec3(u, v, 1 - u - v);
+                    tNear = t;
+                    color = vec3(1.f,1.f,1.f);
                 }
             }
         }
