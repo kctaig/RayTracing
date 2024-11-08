@@ -34,8 +34,6 @@ TriMeshModel::TriMeshModel(std::string fileNameDir, std::string fileName)
         glm::vec3 v_pos = glm::vec3(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
         Vertex *v = new Vertex();
         v->pos = v_pos;
-        //! 验证cube模型可见性
-        v->pos.z -= 3;
         this->vertices.push_back(*v);
     }
 
@@ -79,25 +77,22 @@ void TriMeshModel::intersection(const Ray& ray, PayLoad &payload, float& tMin, f
         vec3 v2 = vertices[m.indices[2]].pos;
         vec3 E1 = v1 - v0;
         vec3 E2 = v2 - v0;
-        vec3 T = ray.get_origin() - v0;
-        vec3 D = normalize(ray.get_dir());
+        vec3 S = ray.getOrigin() - v0;
+        vec3 D = ray.getDir();
         vec3 P = cross(D, E2);
-        vec3 Q = cross(T, E1);
-        float p_e1 = dot(P, E1);
-        float t = dot(Q, E2) / p_e1;
-        float u = dot(P, T) / p_e1;
-        float v = dot(Q, D) / p_e1;
-
-        if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0)
-        {
-            //cout <<"valid: " << t << " " << u << " " << v << endl;
-            if (t < tMax)
-            {   
-                tMax = t;
-                payload.ishit = true;
-                payload.hitPoint = ray.at(tMax);
-                payload.uv = { u,v };
-            }
+        vec3 Q = cross(S, E1);
+        float inv_det = 1 / dot(P, E1);
+        float u = dot(P, S) * inv_det;
+        if (u < 0 || u > 1) continue;
+        float v = dot(Q, D) * inv_det;
+        if (v < 0 || u + v >1) continue;
+        float t = dot(Q, E2) * inv_det;
+        if (t > tMin && t < tMax)
+        {   
+            tMax = t;
+            payload.ishit = true;
+            payload.hitPoint = ray.at(t);
+            payload.uv = { u,v };
         }
     }
 }

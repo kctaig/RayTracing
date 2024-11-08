@@ -8,7 +8,8 @@
 class Scene
 {
 public:
-	Scene() {}
+	Scene(){}
+	Scene(const Camera& cam, const vector<Model*> m):cam(cam),models(m){}
 
 	void renderScene();
 	PayLoad renderPixel(size_t x, size_t y);

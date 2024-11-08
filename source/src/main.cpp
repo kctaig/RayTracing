@@ -11,13 +11,13 @@ int main()
     // set camera
     Film film{50, 50};
     // right coordinates
-    Camera cam({0, 0, 0}, {0, 1, 0}, {1, 0, 0});
+    Camera cam({-1.3, 0, 0}, {0, 1, 0}, {0, 0, 0});
     cam.film = &film;
     scene.cam = cam;
 
     // set objects
     const std::string fileDir = std::filesystem::path("D:/code/RayTracing/models/simple_dragon").string();
-    TriMeshModel triModel(fileDir, "simple_dragon_z.obj");
+    TriMeshModel triModel(fileDir, "simple_dragon.obj");
     // triModel.modelInfo();
     scene.addModel(&triModel);
     scene.renderScene();
