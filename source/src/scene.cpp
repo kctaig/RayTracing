@@ -13,7 +13,6 @@ void Scene::renderScene()
 {
     auto w = cam.film->width;
     auto h = cam.film->height;
-    cam.generateMatrix();
     std::atomic<int> count(0);
 
 #if 1
