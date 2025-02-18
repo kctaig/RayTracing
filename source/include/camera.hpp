@@ -11,8 +11,6 @@ public:
 
 	Camera(vec3 e, vec3 l, vec3 u, float fovy = 90) :eye(e), lookat(l), up(u), fovy(fovy) {};
 
-	//void generateMatrix();
-
 	Ray generateRay(const glm::ivec2& pixelCoord, const glm::vec2& offsets) const;
 
 	Film* film;
@@ -20,6 +18,4 @@ public:
 	vec3 lookat;
 	vec3 up;
 	float fovy;
-	//glm::mat4 camFromWorld;
-	//glm::mat4 clipFromCam;
 };

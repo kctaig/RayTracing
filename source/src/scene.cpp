@@ -9,7 +9,6 @@
 void Scene::render() {
 	auto w = cam.film->width;
 	auto h = cam.film->height;
-	//cam.generateMatrix();
 
 	// Logger logger("D:/code/RayTracing/output/dragon.log");
 
@@ -18,8 +17,7 @@ void Scene::render() {
 		for (int i = 0; i < w; i++) {
 			PayLoad payload = renderPixel(i, j);
 			vec3 color = { 0,0,0 };
-			//if (payload.ishit) color = glm::vec3{ payload.uv, 1 - payload.uv[0] - payload.uv[1] };
-			if (payload.ishit) color = glm::vec3{ 1, 1 ,1 };
+			if (payload.ishit) color = glm::vec3{ payload.uv, 1 - payload.uv[0] - payload.uv[1] };
 			cam.film->setPixel(i, j, color);
 			if (i == 0) {
 				cout << static_cast<float>(j) / static_cast<float>(h) << endl;
@@ -27,7 +25,6 @@ void Scene::render() {
 		}
 	}
 	// logger.RestoreOriginalBuffers();
-
 	cam.film->saveToFile(CURRENT_DIR / "../../output/image.ppm");
 }
 

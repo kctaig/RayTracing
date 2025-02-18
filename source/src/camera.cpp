@@ -2,44 +2,31 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
-//void Camera::generateMatrix()
-//{
-//	auto w = film->width;
-//	auto h = film->height;
-//	auto aspectRatio = static_cast<float>(w) / static_cast<float>(h);
-//	camFromWorld = glm::lookAt(eye, lookat, up);
-//	clipFromCam = glm::perspective(
-//		glm::radians(fovy),
-//		aspectRatio,
-//		1.f,
-//		200.f
-//	);
-//}
-
 Ray Camera::generateRay(const glm::ivec2& pixelCoord, const glm::vec2& offsets) const
 {
-	//auto ndc = (static_cast<glm::vec2>(pixelCoord) + offsets) / glm::vec2(film->width, film->height);
-	//ndc.y = 1.f - ndc.y;
-	//ndc = ndc * 2.f - 1.f;
-	//auto worldCoord = glm::inverse(clipFromCam) * glm::vec4(ndc, 1, 1.f);
-	//auto worldCoord = glm::inverse(camFromWorld) * glm::inverse(clipFromCam) * glm::vec4(ndc, 0, 1.f);
+	float width = static_cast<float>(film->width);
+	float height = static_cast<float>(film->height);
 
-	//cout << "world: " << worldCoord.x << " " << worldCoord.y << " " << worldCoord.z << endl;
+	vec3 forward = normalize(lookat - eye);
+	vec3 right = normalize(cross(forward, up));
+	vec3 up = cross(right, forward);
 
-	//float fovy_rad = fovy * M_PI / 180.0;
-	float focal_length = film->height / (2.0 * tan(fovy / 2.0));
+	// 计算投影矩阵
+	float aspect = width / height;
+	mat4 projection = glm::perspective(glm::radians(fovy), aspect, 0.1f, 100.0f);
+	mat4 view = glm::lookAt(eye, lookat, up);
+	// 计算屏幕坐标
+	float x = (2.0f * (pixelCoord.x + 0.5f) / float(width)) - 1.0f;
+	float y = 1.0f - (2.0f * (pixelCoord.y + 0.5f) / float(height));
 
-	vec3 view = normalize(lookat - eye);
-	vec3 right = normalize(glm::cross(up, view));
-	vec3 up = glm::cross(view, right);
+	// 根据透视投影计算反向光线
+	glm::vec4 ray_clip(x, y, -1.0f, 1.0f);
+	glm::vec4 ray_eye = glm::inverse(projection) * ray_clip;
+	ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
 
-	float plane_height = 2.0 * focal_length * tan(fovy / 2.0);
-	float plane_width = plane_height * (float)film->width / film->height;
+	// 转换到世界空间
+	vec3 ray_direction = normalize(glm::vec3(glm::inverse(view) * ray_eye));
 
-	float x = (2.0 * pixelCoord.x / film->width - 1.0) * plane_width / 2.0;
-	float y = (2.0 * pixelCoord.y / film->height - 1.0) * plane_height / 2.0;
-
-	vec3 ray_dir = view + x * right + y * up;
-
-	return Ray(eye, ray_dir);
+	// 返回光线
+	return Ray{ eye, ray_direction };
 }
