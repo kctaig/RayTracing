@@ -12,11 +12,14 @@ void Scene::render() {
 	//cam.generateMatrix();
 
 	// Logger logger("D:/code/RayTracing/output/dragon.log");
-	for (size_t j = 0; j < h; j++) {
-		for (size_t i = 0; i < w; i++) {
+
+#pragma omp parallel for
+	for (int j = 0; j < h; j++) {
+		for (int i = 0; i < w; i++) {
 			PayLoad payload = renderPixel(i, j);
 			vec3 color = { 0,0,0 };
-			if (payload.ishit) color = glm::vec3{ payload.uv, 1 - payload.uv[0] - payload.uv[1] };
+			//if (payload.ishit) color = glm::vec3{ payload.uv, 1 - payload.uv[0] - payload.uv[1] };
+			if (payload.ishit) color = glm::vec3{ 1, 1 ,1 };
 			cam.film->setPixel(i, j, color);
 			if (i == 0) {
 				cout << static_cast<float>(j) / static_cast<float>(h) << endl;
@@ -28,7 +31,7 @@ void Scene::render() {
 	cam.film->saveToFile(CURRENT_DIR / "../../output/image.ppm");
 }
 
-PayLoad Scene::renderPixel(size_t x, size_t y) {
+PayLoad Scene::renderPixel(int x, int y) {
 	Ray ray = cam.generateRay({ x, y }, { 0.5, 0.5 });
 	float tMin = 0.f;
 	float tMax = INFINITY;

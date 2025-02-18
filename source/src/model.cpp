@@ -71,23 +71,23 @@ void Model::modelInfo()
     cout << "# of vertices  : " << (this->vertices.size()) << endl;
     cout << "# of meshes   : " << (this->triangles.size()) << endl;
 
-    // 打印顶点
-    cout << "start print vertices: \n";
-    for (size_t j = 0; j < this->vertices.size(); j++)
-    {
-        Vertex v = this->vertices[j];
-        cout << v.pos[0] << " " << v.pos[1] << " " << v.pos[2] << endl;
-    }
+    //// 打印顶点
+    //cout << "start print vertices: \n";
+    //for (size_t j = 0; j < this->vertices.size(); j++)
+    //{
+    //    Vertex v = this->vertices[j];
+    //    cout << v.pos[0] << " " << v.pos[1] << " " << v.pos[2] << endl;
+    //}
 
     // 打印mesh
-    cout << "start print meshes: \n";
+    /*cout << "start print meshes: \n";
     for (size_t j = 0; j < this->triangles.size(); j++)
     {
         cout << "mesh " << j << " : ";
         cout << this->triangles[j].indices[0] << " ";
         cout << this->triangles[j].indices[1] << " ";
         cout << this->triangles[j].indices[2] << endl;
-    }
+    }*/
 }
 
 void Model::intersection(const Ray& ray, PayLoad& payload, float& tMin, float& tMax) const {
