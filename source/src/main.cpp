@@ -1,23 +1,13 @@
 #include "head_include.hpp"
 #include "camera.hpp"
-#include <scene.hpp>
-#include <filesystem>
+#include "scene.hpp"
 
 int main()
 {
-	Scene scene;
-
-	// set camera
-	Film film{ 200, 200 };
-	// right coordinates
-	Camera cam({ 278.0, 273.0, -800.0 }, { 278.0, 273.0, -799.0 }, { 0, 1.0, 0 }, 39.3077);
-	cam.film = &film;
-	scene.cam = cam;
-
-	// set objects
-	const std::string fileDir = std::filesystem::path("../../example-scenes-cg24/cornell-box").string();
-	Model model(fileDir, "cornell-box.obj");
-	model.modelInfo();
+	const std::string sceneDir = "../../example-scenes-cg24";
+	const std::string fileName = "cornell-box";
+	Scene scene(sceneDir + "/" + fileName, fileName);
+	Model model(sceneDir + "/" + fileName , fileName);
 	scene.addModel(&model);
 	scene.render();
 

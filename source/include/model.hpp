@@ -18,7 +18,7 @@ class Model
 {
 public:
 	Model() {}
-	Model(std::string fileNameDir, std::string fileName);
+	Model(const std::string, const std::string );
 
 	void modelInfo();
 

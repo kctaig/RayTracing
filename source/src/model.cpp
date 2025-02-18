@@ -4,12 +4,12 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
-Model::Model(std::string fileNameDir, std::string fileName) {
+Model::Model(const std::string fileDir, const std::string fileName) {
     tinyobj::ObjReaderConfig reader_config;
-    reader_config.mtl_search_path = fileNameDir; // Path to material files
+    reader_config.mtl_search_path = fileDir; // Path to material files
     tinyobj::ObjReader reader;
 
-    if (!reader.ParseFromFile(fileNameDir + "/" + fileName, reader_config))
+    if (!reader.ParseFromFile(fileDir + "/" + fileName + ".obj", reader_config))
     {
         if (!reader.Error().empty())
         {
