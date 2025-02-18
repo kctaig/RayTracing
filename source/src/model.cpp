@@ -1,11 +1,10 @@
-#include "tri_mesh_model.hpp"
 #include "head_include.hpp"
+#include "model.hpp"
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
-
-TriMeshModel::TriMeshModel(std::string fileNameDir, std::string fileName)
-{
+Model::Model(std::string fileNameDir, std::string fileName) {
     tinyobj::ObjReaderConfig reader_config;
     reader_config.mtl_search_path = fileNameDir; // Path to material files
     tinyobj::ObjReader reader;
@@ -19,8 +18,7 @@ TriMeshModel::TriMeshModel(std::string fileNameDir, std::string fileName)
         exit(1);
     }
 
-    if (!reader.Warning().empty())
-    {
+    if (!reader.Warning().empty()) {
         cout << "TinyObshapesjReader: " << reader.Warning();
     }
 
@@ -34,8 +32,6 @@ TriMeshModel::TriMeshModel(std::string fileNameDir, std::string fileName)
         glm::vec3 v_pos = glm::vec3(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
         Vertex *v = new Vertex();
         v->pos = v_pos;
-        //! 验证cube模型可见性
-        v->pos.z -= 3;
         this->vertices.push_back(*v);
     }
 
@@ -69,40 +65,7 @@ TriMeshModel::TriMeshModel(std::string fileNameDir, std::string fileName)
     }
 }
 
-void TriMeshModel::intersection(const Ray& ray, PayLoad &payload, float& tMin, float& tMax) const
-{
-    for (size_t j = 0; j < triangles.size(); j++)
-    {
-        Mesh m = triangles[j];
-        vec3 v0 = vertices[m.indices[0]].pos;
-        vec3 v1 = vertices[m.indices[1]].pos;
-        vec3 v2 = vertices[m.indices[2]].pos;
-        vec3 E1 = v1 - v0;
-        vec3 E2 = v2 - v0;
-        vec3 T = ray.get_origin() - v0;
-        vec3 D = normalize(ray.get_dir());
-        vec3 P = cross(D, E2);
-        vec3 Q = cross(T, E1);
-        float p_e1 = dot(P, E1);
-        float t = dot(Q, E2) / p_e1;
-        float u = dot(P, T) / p_e1;
-        float v = dot(Q, D) / p_e1;
-
-        if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0)
-        {
-            //cout <<"valid: " << t << " " << u << " " << v << endl;
-            if (t < tMax)
-            {   
-                tMax = t;
-                payload.ishit = true;
-                payload.hitPoint = ray.at(tMax);
-                payload.uv = { u,v };
-            }
-        }
-    }
-}
-
-void TriMeshModel::modelInfo()
+void Model::modelInfo()
 {
     // 调试信息
     cout << "# of vertices  : " << (this->vertices.size()) << endl;
@@ -124,5 +87,34 @@ void TriMeshModel::modelInfo()
         cout << this->triangles[j].indices[0] << " ";
         cout << this->triangles[j].indices[1] << " ";
         cout << this->triangles[j].indices[2] << endl;
+    }
+}
+
+void Model::intersection(const Ray& ray, PayLoad& payload, float& tMin, float& tMax) const {
+    for (size_t j = 0; j < triangles.size(); j++) {
+        Mesh m = triangles[j];
+        vec3 v0 = vertices[m.indices[0]].pos;
+        vec3 v1 = vertices[m.indices[1]].pos;
+        vec3 v2 = vertices[m.indices[2]].pos;
+        vec3 E1 = v1 - v0;
+        vec3 E2 = v2 - v0;
+        vec3 T = ray.get_origin() - v0;
+        vec3 D = normalize(ray.get_dir());
+        vec3 P = cross(D, E2);
+        vec3 Q = cross(T, E1);
+        float p_e1 = dot(P, E1);
+        float t = dot(Q, E2) / p_e1;
+        float u = dot(P, T) / p_e1;
+        float v = dot(Q, D) / p_e1;
+
+        if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0) {
+            // cout <<"valid: " << t << " " << u << " " << v << endl;
+            if (t < tMax) {
+                tMax = t;
+                payload.ishit = true;
+                payload.hitPoint = ray.at(tMax);
+                payload.uv = {u, v};
+            }
+        }
     }
 }

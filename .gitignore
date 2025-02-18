@@ -7,3 +7,5 @@
 /out/build/x64-Debug
 /build
 /cmake-build
+/CMakeSettings.json
+/example-scenes-cg24

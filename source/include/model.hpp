@@ -3,28 +3,28 @@
 #include "head_include.hpp"
 #include "Ray.hpp"
 
-class Vertex
+struct Vertex
 {
-
-public:
-    vec3 pos;
-    vec3 normal;
-    vec3 color;
+	vec3 pos;
+	vec3 normal;
 };
 
-class Mesh
+struct Mesh
 {
-
-public:
-    vector<size_t> indices;
+	vector<int> indices;
 };
 
 class Model
 {
-
 public:
-    Model() {}
-    virtual void intersection(const Ray&, PayLoad&, float&, float&) const = 0;
+	Model() {}
+	Model(std::string fileNameDir, std::string fileName);
 
-    vector<Vertex> vertices;
+	void modelInfo();
+
+	void intersection(const Ray&, PayLoad&, float&, float&) const;
+
+private:
+	vector<Vertex> vertices;
+	vector<Mesh> triangles;
 };
