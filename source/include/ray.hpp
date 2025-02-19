@@ -6,8 +6,7 @@ class PayLoad {
 public:
 	bool ishit = false;
 	int mat_id;
-	int model_id;
-	vec3 hitPoint;
+	vec3 hitPos;
 	vec3 normal;
 	glm::vec2 uv;
 };

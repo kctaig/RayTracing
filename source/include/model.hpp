@@ -28,7 +28,6 @@ public:
 
 	vector<Material> mats;
 
-private:
 	vector<Vertex> vertices;
 	vector<Mesh> triangles;
 };

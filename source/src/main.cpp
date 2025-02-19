@@ -9,7 +9,7 @@ int main()
 	const std::string fileName = "cornell-box";
 	Scene scene(sceneDir + "/" + fileName, fileName, true);
 	Model model(sceneDir + "/" + fileName, fileName);
-	scene.addModel(&model);
+	scene.setModel(&model);
 	auto start = std::chrono::high_resolution_clock::now();
 	scene.render();
 	auto end = std::chrono::high_resolution_clock::now();

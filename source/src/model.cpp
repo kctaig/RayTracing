@@ -109,33 +109,33 @@ void Model::modelInfo()
 	}*/
 }
 
-void Model::intersection(const Ray& ray, PayLoad& payload, float& tMin, float& tMax) const {
-	for (int j = 0; j < triangles.size(); j++) {
-		Mesh m = triangles[j];
-		vec3 v0 = vertices[m.indices[0]].pos;
-		vec3 v1 = vertices[m.indices[1]].pos;
-		vec3 v2 = vertices[m.indices[2]].pos;
-		vec3 E1 = v1 - v0;
-		vec3 E2 = v2 - v0;
-		vec3 T = ray.get_origin() - v0;
-		vec3 D = normalize(ray.get_dir());
-		vec3 P = cross(D, E2);
-		vec3 Q = cross(T, E1);
-		float p_e1 = dot(P, E1);
-		float t = dot(Q, E2) / p_e1;
-		float u = dot(P, T) / p_e1;
-		float v = dot(Q, D) / p_e1;
-
-		if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0) {
-			if (t < tMax) {
-				tMax = t;
-				payload.ishit = true;
-				payload.hitPoint = ray.at(t);
-				payload.uv = { u, v };
-				vec3 normal = (vertices[m.indices[0]].normal + vertices[m.indices[1]].normal + vertices[m.indices[2]].normal) / 3.0f;
-				payload.normal = normalize(normal);
-				payload.mat_id = triangles[j].mat_id;
-			}
-		}
-	}
-}
+//void Model::intersection(const Ray& ray, PayLoad& payload, float& tMin, float& tMax) const {
+//	for (int j = 0; j < triangles.size(); j++) {
+//		Mesh m = triangles[j];
+//		vec3 v0 = vertices[m.indices[0]].pos;
+//		vec3 v1 = vertices[m.indices[1]].pos;
+//		vec3 v2 = vertices[m.indices[2]].pos;
+//		vec3 E1 = v1 - v0;
+//		vec3 E2 = v2 - v0;
+//		vec3 T = ray.get_origin() - v0;
+//		vec3 D = normalize(ray.get_dir());
+//		vec3 P = cross(D, E2);
+//		vec3 Q = cross(T, E1);
+//		float p_e1 = dot(P, E1);
+//		float t = dot(Q, E2) / p_e1;
+//		float u = dot(P, T) / p_e1;
+//		float v = dot(Q, D) / p_e1;
+//
+//		if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0) {
+//			if (t < tMax) {
+//				tMax = t;
+//				payload.ishit = true;
+//				payload.hitPos = ray.at(t);
+//				payload.uv = { u, v };
+//				vec3 normal = (vertices[m.indices[0]].normal + vertices[m.indices[1]].normal + vertices[m.indices[2]].normal) / 3.0f;
+//				payload.normal = normalize(normal);
+//				payload.mat_id = triangles[j].mat_id;
+//			}
+//		}
+//	}
+//}

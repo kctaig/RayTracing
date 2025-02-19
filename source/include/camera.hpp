@@ -1,7 +1,7 @@
 #pragma once
 
 #include "head_include.hpp"
-#include <ray.hpp>
+#include "ray.hpp"
 #include "film.hpp"
 
 class Camera

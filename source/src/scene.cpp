@@ -1,6 +1,4 @@
 #include <cmath>
-#include <filesystem>
-
 #include "scene.hpp"
 #include "log.hpp"
 #include "tinyxml2/tinyxml2.h"
@@ -80,13 +78,7 @@ void Scene::render() {
 #pragma omp parallel for
 	for (int j = 0; j < h; j++) {
 		for (int i = 0; i < w; i++) {
-			PayLoad payload = renderPixel(i, j);
-			vec3 color = { 0,0,0 };
-
-			// set peixel color
-			if (payload.ishit) {
-				color = models[payload.model_id]->mats[payload.mat_id].Kd;
-			}
+			vec3 color = renderPixel(i, j);
 			cam.filmPtr->setPixel(i, j, color);
 
 			// 更新已完成的进度
@@ -109,14 +101,55 @@ void Scene::render() {
 	cam.filmPtr->saveToFile("../../output/image.ppm");
 }
 
-PayLoad Scene::renderPixel(int x, int y) {
-	Ray ray = cam.generateRay({ x, y }, { 0.5, 0.5 });
-	float tMin = 0.f;
-	float tMax = INFINITY;
-	PayLoad payload{};
-	for (int i = 0; i < models.size(); i++) {
-		models[i]->intersection(ray, payload, tMin, tMax);
-		payload.model_id = i;
+PayLoad Scene::intersection(const Ray& ray) const {
+	float tMin = 0.0f, tMax = 1e10;
+	PayLoad payload;
+	for (int j = 0; j < model->triangles.size(); j++) {
+		Mesh m = model->triangles[j];
+		vec3 v0 = model->vertices[m.indices[0]].pos;
+		vec3 v1 = model->vertices[m.indices[1]].pos;
+		vec3 v2 = model->vertices[m.indices[2]].pos;
+		vec3 E1 = v1 - v0;
+		vec3 E2 = v2 - v0;
+		vec3 T = ray.get_origin() - v0;
+		vec3 D = normalize(ray.get_dir());
+		vec3 P = cross(D, E2);
+		vec3 Q = cross(T, E1);
+		float p_e1 = dot(P, E1);
+		float t = dot(Q, E2) / p_e1;
+		float u = dot(P, T) / p_e1;
+		float v = dot(Q, D) / p_e1;
+
+		if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0) {
+			if (t < tMax) {
+				tMax = t;
+				payload.ishit = true;
+				payload.hitPos = ray.at(t);
+				payload.uv = { u, v };
+				vec3 normal = (model->vertices[m.indices[0]].normal + model->vertices[m.indices[1]].normal + model->vertices[m.indices[2]].normal) / 3.0f;
+				payload.normal = normalize(normal);
+				payload.mat_id = model->triangles[j].mat_id;
+			}
+		}
 	}
 	return payload;
+}
+
+vec3 Scene::renderPixel(int x, int y) {
+	Ray ray = cam.generateRay({ x, y }, { 0.5, 0.5 });
+	int i = 0;
+	vec3 color = { 0,0,0 };
+	while (i++ <= 1) {
+		PayLoad payload = intersection(ray);
+		if (!payload.ishit)
+			break;
+		// 计算出射光线
+		
+		// 采样光源
+
+		// 更新颜色
+		color = model->mats[payload.mat_id].Kd;
+		
+	}
+	return color;
 }

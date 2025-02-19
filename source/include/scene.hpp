@@ -10,10 +10,12 @@ public:
 	Scene() {}
 	Scene(const std::string fileDir, const std::string fileName, bool test = false);
 	void render();
-	PayLoad renderPixel(int x, int y);
+	vec3 renderPixel(int x, int y);
 
-	void addModel(Model* m) { models.push_back(m); }
+	void setModel(Model* m) { model = m; }
+
+	PayLoad intersection(const Ray& ray) const;
 
 	Camera cam;
-	vector<Model*> models;
+	Model* model;
 };
