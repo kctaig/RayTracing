@@ -24,7 +24,7 @@ public:
 
 	void modelInfo();
 
-	void intersection(const Ray&, PayLoad&, float&, float&) const;
+	void intersection(const Ray &, PayLoad &, float &, float &) const;
 
 	vector<Material> mats;
 

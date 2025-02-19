@@ -9,11 +9,11 @@ class Camera
 public:
 	Camera() {};
 
-	Camera(vec3 e, vec3 l, vec3 u, float fovy = 90) :eye(e), lookat(l), up(u), fovy(fovy) {};
+	Camera(vec3 e, vec3 l, vec3 u, float fovy = 90) : eye(e), lookat(l), up(u), fovy(fovy) {};
 
-	Ray generateRay(const glm::ivec2& pixelCoord, const glm::vec2& offsets) const;
+	Ray generateRay(const glm::ivec2 &pixelCoord, const glm::vec2 &offsets) const;
 
-	Film* filmPtr;
+	Film *filmPtr;
 	vec3 eye;
 	vec3 lookat;
 	vec3 up;

@@ -4,7 +4,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
-Model::Model(const std::string fileDir, const std::string fileName) {
+Model::Model(const std::string fileDir, const std::string fileName)
+{
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.mtl_search_path = fileDir; // Path to material files
 	tinyobj::ObjReader reader;
@@ -18,65 +19,67 @@ Model::Model(const std::string fileDir, const std::string fileName) {
 		exit(1);
 	}
 
-	if (!reader.Warning().empty()) {
+	if (!reader.Warning().empty())
+	{
 		cout << "TinyObshapesjReader: " << reader.Warning();
 	}
 
-	auto& attrib = reader.GetAttrib();
-	auto& shapes = reader.GetShapes();
-	auto& materials = reader.GetMaterials();
+	auto &attrib = reader.GetAttrib();
+	auto &shapes = reader.GetShapes();
+	auto &materials = reader.GetMaterials();
 
-	// Ìí¼ÓÄ£ĞÍµÄ¶¥µã
+	// æ·»åŠ æ¨¡å‹çš„é¡¶ç‚¹
 	for (size_t i = 0; i < attrib.vertices.size(); i += 3)
 	{
 		glm::vec3 v_pos = glm::vec3(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
-		Vertex* v = new Vertex();
+		Vertex *v = new Vertex();
 		v->pos = v_pos;
 		this->vertices.push_back(*v);
 	}
 
 	mats.resize(materials.size() + 1);
-	for (size_t i = 0; i < materials.size(); i++) {
+	for (size_t i = 0; i < materials.size(); i++)
+	{
 		vec3 diffuse = vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]);
 		vec3 specular = vec3(materials[i].specular[0], materials[i].specular[1], materials[i].specular[2]);
 		vec3 transmittance = vec3(materials[i].transmittance[0], materials[i].transmittance[1], materials[i].transmittance[2]);
 
 		Material mat(materials[i].name,
-			diffuse,
-			diffuse,
-			transmittance,
-			materials[i].shininess,
-			materials[i].ior);
+					 diffuse,
+					 diffuse,
+					 transmittance,
+					 materials[i].shininess,
+					 materials[i].ior);
 
 		mats[i + 1] = mat;
 	}
 
-	// ½«Ä£ĞÍÊı¾İ±£´æµ½ModelÖĞ
+	// å°†æ¨¡å‹æ•°æ®ä¿å­˜åˆ°Modelä¸­
 	for (int i = 0; i < shapes.size(); i++)
 	{
-		int mesh_vertex_offset = 0;                             // ÃæÆ¬¶¥µãÆ«ÒÆÁ¿
-		int mesh_num = shapes[i].mesh.num_face_vertices.size(); // ÃæÆ¬ÊıÁ¿
+		int mesh_vertex_offset = 0;								// é¢ç‰‡é¡¶ç‚¹åç§»é‡
+		int mesh_num = shapes[i].mesh.num_face_vertices.size(); // é¢ç‰‡æ•°é‡
 		for (int m = 0; m < mesh_num; m++)
 		{
 			std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
 			int each_mesh_vertex_num = shapes[i].mesh.num_face_vertices[m];
 			mesh->indices.resize(each_mesh_vertex_num);
 			tinyobj::index_t idx;
-			// ²é¿´Ã¿¸öÃæÆ¬µÄ¶¥µã
+			// æŸ¥çœ‹æ¯ä¸ªé¢ç‰‡çš„é¡¶ç‚¹
 			for (int v = 0; v < each_mesh_vertex_num; v++)
 			{
 				idx = shapes[i].mesh.indices[mesh_vertex_offset + v];
-				mesh->indices[v] = idx.vertex_index; // ÃæÆ¬µÄµÄ¶¥µãË÷Òı
+				mesh->indices[v] = idx.vertex_index; // é¢ç‰‡çš„çš„é¡¶ç‚¹ç´¢å¼•
 				if (idx.normal_index >= 0 && idx.normal_index < this->vertices.size())
 				{
 					tinyobj::real_t nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
 					tinyobj::real_t ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
 					tinyobj::real_t nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
-					this->vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // Ìí¼Ó·¨ÏòÁ¿
+					this->vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // æ·»åŠ æ³•å‘é‡
 				}
 			}
 
-			// Ã¿¸öÃæµÄ²ÄÖÊid
+			// æ¯ä¸ªé¢çš„æè´¨id
 			mesh->mat_id = shapes[i].mesh.material_ids[m];
 			this->triangles.push_back(*mesh);
 			mesh_vertex_offset += each_mesh_vertex_num;
@@ -86,19 +89,19 @@ Model::Model(const std::string fileDir, const std::string fileName) {
 
 void Model::modelInfo()
 {
-	// µ÷ÊÔĞÅÏ¢
+	// è°ƒè¯•ä¿¡æ¯
 	cout << "# of vertices  : " << (this->vertices.size()) << endl;
 	cout << "# of meshes   : " << (this->triangles.size()) << endl;
 
-	//// ´òÓ¡¶¥µã
-	//cout << "start print vertices: \n";
-	//for (size_t j = 0; j < this->vertices.size(); j++)
+	//// æ‰“å°é¡¶ç‚¹
+	// cout << "start print vertices: \n";
+	// for (size_t j = 0; j < this->vertices.size(); j++)
 	//{
-	//    Vertex v = this->vertices[j];
-	//    cout << v.pos[0] << " " << v.pos[1] << " " << v.pos[2] << endl;
-	//}
+	//     Vertex v = this->vertices[j];
+	//     cout << v.pos[0] << " " << v.pos[1] << " " << v.pos[2] << endl;
+	// }
 
-	// ´òÓ¡mesh
+	// æ‰“å°mesh
 	/*cout << "start print meshes: \n";
 	for (size_t j = 0; j < this->triangles.size(); j++)
 	{
@@ -108,34 +111,3 @@ void Model::modelInfo()
 		cout << this->triangles[j].indices[2] << endl;
 	}*/
 }
-
-//void Model::intersection(const Ray& ray, PayLoad& payload, float& tMin, float& tMax) const {
-//	for (int j = 0; j < triangles.size(); j++) {
-//		Mesh m = triangles[j];
-//		vec3 v0 = vertices[m.indices[0]].pos;
-//		vec3 v1 = vertices[m.indices[1]].pos;
-//		vec3 v2 = vertices[m.indices[2]].pos;
-//		vec3 E1 = v1 - v0;
-//		vec3 E2 = v2 - v0;
-//		vec3 T = ray.get_origin() - v0;
-//		vec3 D = normalize(ray.get_dir());
-//		vec3 P = cross(D, E2);
-//		vec3 Q = cross(T, E1);
-//		float p_e1 = dot(P, E1);
-//		float t = dot(Q, E2) / p_e1;
-//		float u = dot(P, T) / p_e1;
-//		float v = dot(Q, D) / p_e1;
-//
-//		if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0) {
-//			if (t < tMax) {
-//				tMax = t;
-//				payload.ishit = true;
-//				payload.hitPos = ray.at(t);
-//				payload.uv = { u, v };
-//				vec3 normal = (vertices[m.indices[0]].normal + vertices[m.indices[1]].normal + vertices[m.indices[2]].normal) / 3.0f;
-//				payload.normal = normalize(normal);
-//				payload.mat_id = triangles[j].mat_id;
-//			}
-//		}
-//	}
-//}

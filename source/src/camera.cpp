@@ -2,7 +2,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
-Ray Camera::generateRay(const glm::ivec2& pixelCoord, const glm::vec2& offsets) const
+Ray Camera::generateRay(const glm::ivec2 &pixelCoord, const glm::vec2 &offsets) const
 {
 	float width = static_cast<float>(filmPtr->width);
 	float height = static_cast<float>(filmPtr->height);
@@ -11,22 +11,22 @@ Ray Camera::generateRay(const glm::ivec2& pixelCoord, const glm::vec2& offsets) 
 	vec3 right = normalize(cross(forward, up));
 	vec3 up = cross(right, forward);
 
-	// ¼ÆËãÍ¶Ó°¾ØÕó
+	// è®¡ç®—æŠ•å½±çŸ©é˜µ
 	float aspect = width / height;
 	mat4 projection = glm::perspective(glm::radians(fovy), aspect, 0.1f, 100.0f);
 	mat4 view = glm::lookAt(eye, lookat, up);
-	// ¼ÆËãÆÁÄ»×ø±ê
+	// è®¡ç®—å±å¹•åæ ‡
 	float x = (2.0f * (pixelCoord.x + 0.5f) / float(width)) - 1.0f;
 	float y = 1.0f - (2.0f * (pixelCoord.y + 0.5f) / float(height));
 
-	// ¸ù¾İÍ¸ÊÓÍ¶Ó°¼ÆËã·´Ïò¹âÏß
+	// æ ¹æ®é€è§†æŠ•å½±è®¡ç®—åå‘å…‰çº¿
 	glm::vec4 ray_clip(x, y, -1.0f, 1.0f);
 	glm::vec4 ray_eye = glm::inverse(projection) * ray_clip;
 	ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
 
-	// ×ª»»µ½ÊÀ½ç¿Õ¼ä
+	// è½¬æ¢åˆ°ä¸–ç•Œç©ºé—´
 	vec3 ray_direction = normalize(glm::vec3(glm::inverse(view) * ray_eye));
 
-	// ·µ»Ø¹âÏß
-	return Ray{ eye, ray_direction };
+	// è¿”å›å…‰çº¿
+	return Ray{eye, ray_direction};
 }

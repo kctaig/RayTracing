@@ -2,17 +2,17 @@
 
 #include "head_include.hpp"
 
-class Material {
+class Material
+{
 public:
-
 	Material() {}
 
 	Material(std::string name, vec3 kd, vec3 ks, vec3 tr, float ns, float ni) : matName(name), Kd(kd), Ks(ks), Tr(tr), Ns(ns), Ni(ni) {}
 
 	std::string matName;
-	vec3 Kd;   // Âş·´ÉäÑÕÉ«
-	vec3 Ks;   // ¾µÃæ·´ÉäÑÕÉ«
-	vec3 Tr;   // Í¸Ã÷¶È
-	float Ns;  // ¸ß¹âÖ¸Êı
-	float Ni;  // ÕÛÉäÂÊ
+	vec3 Kd;  // æ¼«åå°„é¢œè‰²
+	vec3 Ks;  // é•œé¢åå°„é¢œè‰²
+	vec3 Tr;  // é€æ˜åº¦
+	float Ns; // é«˜å…‰æŒ‡æ•°
+	float Ni; // æŠ˜å°„ç‡
 };

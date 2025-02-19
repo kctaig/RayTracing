@@ -13,7 +13,6 @@ int main()
 	auto start = std::chrono::high_resolution_clock::now();
 	scene.render();
 	auto end = std::chrono::high_resolution_clock::now();
-	// ¼ÆËãºÄÊ±
 	auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 	std::cout << "Elapsed time: " << duration.count() << " seconds" << std::endl;
 

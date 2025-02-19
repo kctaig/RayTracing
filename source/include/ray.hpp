@@ -2,7 +2,8 @@
 
 #include "head_include.hpp"
 
-class PayLoad {
+class PayLoad
+{
 public:
 	bool ishit = false;
 	int mat_id;
@@ -11,12 +12,13 @@ public:
 	glm::vec2 uv;
 };
 
-class Ray {
+class Ray
+{
 public:
-	Ray(vec3 pos, vec3 dir) :origin(pos), dir(dir) {}
+	Ray(vec3 pos, vec3 dir) : origin(pos), dir(dir) {}
 
-	vec3 get_origin()const { return origin; }
-	vec3 get_dir()const { return dir; }
+	vec3 get_origin() const { return origin; }
+	vec3 get_dir() const { return dir; }
 	vec3 at(float t) const { return origin + dir * t; }
 
 private:

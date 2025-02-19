@@ -12,10 +12,10 @@ public:
 	void render();
 	vec3 renderPixel(int x, int y);
 
-	void setModel(Model* m) { model = m; }
+	void setModel(Model *m) { model = m; }
 
-	PayLoad intersection(const Ray& ray) const;
+	PayLoad intersection(const Ray &ray) const;
 
 	Camera cam;
-	Model* model;
+	Model *model;
 };

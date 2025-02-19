@@ -1,31 +1,37 @@
 #include "log.hpp"
 
-Logger::Logger(const std::string& filename) {
-    // ±£´æÔ­Ê¼µÄ cout ºÍ cerr µÄ»º³åÇøÖ¸Õë
+Logger::Logger(const std::string &filename)
+{
+    // ä¿å­˜åŸå§‹çš„ cout å’Œ cerr çš„ç¼“å†²åŒºæŒ‡é’ˆ
     originalCoutBuffer = std::cout.rdbuf();
     originalCerrBuffer = std::cerr.rdbuf();
-    // ´ò¿ªÈÕÖ¾ÎÄ¼ş
+    // æ‰“å¼€æ—¥å¿—æ–‡ä»¶
     logFileStream.open(filename, std::ios::out);
-    //logFileStream.open(filename, std::ios::out | std::ios::app);
-    if (!logFileStream.is_open()) {
-        std::cerr << "ÎŞ·¨´ò¿ªÈÕÖ¾ÎÄ¼ş: " << filename << std::endl;
+    // logFileStream.open(filename, std::ios::out | std::ios::app);
+    if (!logFileStream.is_open())
+    {
+        std::cerr << "æ— æ³•æ‰“å¼€æ—¥å¿—æ–‡ä»¶: " << filename << std::endl;
         return;
     }
-    // ½« cout ºÍ cerr ÖØ¶¨Ïòµ½ÈÕÖ¾ÎÄ¼ş
+    // å°† cout å’Œ cerr é‡å®šå‘åˆ°æ—¥å¿—æ–‡ä»¶
     std::cout.rdbuf(logFileStream.rdbuf());
     std::cerr.rdbuf(logFileStream.rdbuf());
 }
 
-Logger::~Logger() {
+Logger::~Logger()
+{
     RestoreOriginalBuffers();
-    // ¹Ø±ÕÈÕÖ¾ÎÄ¼ş
-    if (logFileStream.is_open()) {
+    // å…³é—­æ—¥å¿—æ–‡ä»¶
+    if (logFileStream.is_open())
+    {
         logFileStream.close();
     }
 }
 
-void Logger::RestoreOriginalBuffers() {
-    if (logFileStream.is_open()) {
+void Logger::RestoreOriginalBuffers()
+{
+    if (logFileStream.is_open())
+    {
         std::cout.rdbuf(originalCoutBuffer);
         std::cerr.rdbuf(originalCerrBuffer);
     }
