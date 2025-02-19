@@ -13,7 +13,7 @@ public:
 
 	Ray generateRay(const glm::ivec2& pixelCoord, const glm::vec2& offsets) const;
 
-	Film* film;
+	Film* filmPtr;
 	vec3 eye;
 	vec3 lookat;
 	vec3 up;

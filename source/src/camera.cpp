@@ -4,8 +4,8 @@
 
 Ray Camera::generateRay(const glm::ivec2& pixelCoord, const glm::vec2& offsets) const
 {
-	float width = static_cast<float>(film->width);
-	float height = static_cast<float>(film->height);
+	float width = static_cast<float>(filmPtr->width);
+	float height = static_cast<float>(filmPtr->height);
 
 	vec3 forward = normalize(lookat - eye);
 	vec3 right = normalize(cross(forward, up));

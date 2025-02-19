@@ -8,10 +8,10 @@ class Scene
 {
 public:
 	Scene() {}
-	Scene(const std::string fileDir, const std::string fileName);
+	Scene(const std::string fileDir, const std::string fileName, bool test = false);
 	void render();
 	PayLoad renderPixel(int x, int y);
-	
+
 	void addModel(Model* m) { models.push_back(m); }
 
 	// attributes
