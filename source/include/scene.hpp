@@ -14,7 +14,6 @@ public:
 
 	void addModel(Model* m) { models.push_back(m); }
 
-	// attributes
 	Camera cam;
 	vector<Model*> models;
 };

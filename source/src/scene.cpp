@@ -82,7 +82,11 @@ void Scene::render() {
 		for (int i = 0; i < w; i++) {
 			PayLoad payload = renderPixel(i, j);
 			vec3 color = { 0,0,0 };
-			if (payload.ishit) color = glm::vec3{ payload.uv, 1 - payload.uv[0] - payload.uv[1] };
+
+			// set peixel color
+			if (payload.ishit) {
+				color = models[payload.model_id]->mats[payload.mat_id].Kd;
+			}
 			cam.filmPtr->setPixel(i, j, color);
 
 			// 更新已完成的进度
@@ -112,6 +116,7 @@ PayLoad Scene::renderPixel(int x, int y) {
 	PayLoad payload{};
 	for (int i = 0; i < models.size(); i++) {
 		models[i]->intersection(ray, payload, tMin, tMax);
+		payload.model_id = i;
 	}
 	return payload;
 }

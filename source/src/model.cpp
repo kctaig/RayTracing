@@ -35,6 +35,22 @@ Model::Model(const std::string fileDir, const std::string fileName) {
 		this->vertices.push_back(*v);
 	}
 
+	mats.resize(materials.size() + 1);
+	for (size_t i = 0; i < materials.size(); i++) {
+		vec3 diffuse = vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]);
+		vec3 specular = vec3(materials[i].specular[0], materials[i].specular[1], materials[i].specular[2]);
+		vec3 transmittance = vec3(materials[i].transmittance[0], materials[i].transmittance[1], materials[i].transmittance[2]);
+
+		Material mat(materials[i].name,
+			diffuse,
+			diffuse,
+			transmittance,
+			materials[i].shininess,
+			materials[i].ior);
+
+		mats[i + 1] = mat;
+	}
+
 	// 将模型数据保存到Model中
 	for (int i = 0; i < shapes.size(); i++)
 	{
@@ -59,6 +75,9 @@ Model::Model(const std::string fileDir, const std::string fileName) {
 					this->vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
 				}
 			}
+
+			// 每个面的材质id
+			mesh->mat_id = shapes[i].mesh.material_ids[m];
 			this->triangles.push_back(*mesh);
 			mesh_vertex_offset += each_mesh_vertex_num;
 		}
@@ -108,12 +127,14 @@ void Model::intersection(const Ray& ray, PayLoad& payload, float& tMin, float& t
 		float v = dot(Q, D) / p_e1;
 
 		if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0) {
-			// cout <<"valid: " << t << " " << u << " " << v << endl;
 			if (t < tMax) {
 				tMax = t;
 				payload.ishit = true;
-				payload.hitPoint = ray.at(tMax);
+				payload.hitPoint = ray.at(t);
 				payload.uv = { u, v };
+				vec3 normal = (vertices[m.indices[0]].normal + vertices[m.indices[1]].normal + vertices[m.indices[2]].normal) / 3.0f;
+				payload.normal = normalize(normal);
+				payload.mat_id = triangles[j].mat_id;
 			}
 		}
 	}

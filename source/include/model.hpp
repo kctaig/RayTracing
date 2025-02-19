@@ -2,6 +2,7 @@
 
 #include "head_include.hpp"
 #include "Ray.hpp"
+#include "material.hpp"
 
 struct Vertex
 {
@@ -12,17 +13,20 @@ struct Vertex
 struct Mesh
 {
 	vector<int> indices;
+	int mat_id;
 };
 
 class Model
 {
 public:
 	Model() {}
-	Model(const std::string, const std::string );
+	Model(const std::string, const std::string);
 
 	void modelInfo();
 
 	void intersection(const Ray&, PayLoad&, float&, float&) const;
+
+	vector<Material> mats;
 
 private:
 	vector<Vertex> vertices;
