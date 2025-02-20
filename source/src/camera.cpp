@@ -1,4 +1,4 @@
-#include <camera.hpp>
+#include "camera.hpp"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
@@ -17,15 +17,12 @@ Ray Camera::genPrimaryRay(const glm::ivec2& pixelCoord) const
 	mat4 view = glm::lookAt(eye, lookat, up);
 
 	// 添加扰动
-	float disturbed_x = static_cast<float>(pixelCoord.x) + genRandF(1.0);
+	float disturbed_x = static_cast<float>(pixelCoord.x) + genRandomFloat();
 	disturbed_x = std::max(0.f, std::min(static_cast<float>(width - 1), disturbed_x));
-	float disturbed_y = static_cast<float>(pixelCoord.y) + genRandF(1.0);
+	float disturbed_y = static_cast<float>(pixelCoord.y) + genRandomFloat();
 	disturbed_y = std::max(0.f, std::min(static_cast<float>(height - 1), disturbed_y));
 
 	// 计算屏幕坐标
-	//float x = (2.0f * (pixelCoord.x + 0.5f) / float(width)) - 1.0f;
-	//float y = 1.0f - (2.0f * (pixelCoord.y + 0.5f) / float(height));
-
 	float x = (2.0f * disturbed_x / float(width)) - 1.0f;
 	float y = 1.0f - (2.0f * disturbed_y / float(height));
 

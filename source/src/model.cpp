@@ -35,8 +35,6 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 	}
 
 	// 添加材质
-	std::unordered_map<std::string, bool> judgeLight;
-	std::unordered_map<std::string, int> nameToId;
 	mats.resize(materials.size());
 	for (size_t i = 0; i < materials.size(); i++)
 	{
@@ -52,14 +50,12 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 			materials[i].ior);
 		mats[i] = mat;
 
-
 		// 光源材质id
 		for (int j = 0; j < lights.size(); j++)
 		{
 			if (lights[j].matName == mat.matName)
 			{
-				judgeLight[mat.matName] = true;
-				nameToId[mat.matName] = j;
+				mat.lightId = j;
 				break;
 			}
 		}
@@ -93,10 +89,9 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 			// 每个面的材质id
 			mesh->matId = shapes[i].mesh.material_ids[m];
 			// 提取光源
-			if (judgeLight[mats[mesh->matId].matName])
+			if (mats[mesh->matId].lightId >= 0)
 			{
-				int lightId = nameToId[mats[mesh->matId].matName];
-				lights[lightId].meshes.push_back(*mesh);
+				lights[mats[mesh->matId].lightId].meshes.push_back(*mesh);
 			}
 			triangles.push_back(*mesh);
 			mesh_vertex_offset += each_mesh_vertex_num;

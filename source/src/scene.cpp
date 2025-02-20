@@ -1,10 +1,11 @@
 #include <cmath>
 #include <sstream>
+#include <random>
+#include <chrono>
 #include "scene.hpp"
 #include "log.hpp"
 #include "tinyxml2/tinyxml2.h"
-#include <light.hpp>
-#include <random>
+#include "light.hpp"
 
 Scene::Scene(const std::string sceneDir, const std::string fileName, bool test)
 {
@@ -84,33 +85,24 @@ void Scene::render()
 {
 	auto w = cam.filmPtr->width;
 	auto h = cam.filmPtr->height;
-
-	int count = 0;
+	int k = 0;
+	while (++k < maxNumSample) {
+		auto start = std::chrono::high_resolution_clock::now();
 #pragma omp parallel for
-	for (int j = 0; j < h; j++)
-	{
-		for (int i = 0; i < w; i++)
+		for (int j = 0; j < h; j++)
 		{
-			vec3 color = { 0, 0, 0 };
-			for (int k = 0; k < numSamples; k++) {
-				color += renderPixel(i, j);
-			}
-			cam.filmPtr->setPixel(i, j, static_cast<float>(1.0) / static_cast<float>(numSamples) * color);
-
-#pragma omp atomic
-			count++;
-			if (count % (w * h / 10) == 0)
+			for (int i = 0; i < w; i++)
 			{
-				double progress = (static_cast<float>(count) / (w * h)) * 100;
-#pragma omp critical
-				{
-					std::cout << "Progress: " << progress << "%\n";
-				}
+				Ray ray = cam.genPrimaryRay({ i, j });
+				cam.filmPtr->addToPixel(i, j, rayCast(ray, 0));
 			}
 		}
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+		cout << "Sample: " << k << " Elapsed time: " << duration.count() << " seconds" << endl;
+
+		cam.filmPtr->saveToFile("../../output/image.ppm", k);
 	}
-	std::cout << "Final Progress: 100%" << std::endl;
-	cam.filmPtr->saveToFile("../../output/image.ppm");
 }
 
 PayLoad Scene::intersection(const Ray& ray) const
@@ -151,31 +143,37 @@ PayLoad Scene::intersection(const Ray& ray) const
 	return payload;
 }
 
-Ray Scene::genSecondaryRay(const PayLoad& payload) const
-{
-	vec3 hitPos = payload.hitPos;
-	vec3 normal = payload.normal;
+vec3 Scene::rayCast(const Ray ray, int depth) {
+	if (depth >= maxDepth) return vec3{ 0 };
+
+	PayLoad payload = intersection(ray);
+	if (!payload.ishit) return vec3{ 0 };
 	Material mat = model->mats[payload.matId];
-	return Ray(hitPos, normal);
+	if (mat.lightId >= 0) return lights[mat.lightId].radiance;
+
+	vec3 rayOut = sampleHemisphere(payload.normal);
+
+	// todo: 采样光源
+	vec3 lightColor = { 0,0,1 };
+	if (genRandomFloat() > rr) return lightColor;
+
+	// 次级光线
+	float pdf = mat.pdf(ray.getDir(), rayOut, payload.normal);
+	vec3 brdf = mat.brdf(ray.getDir(), rayOut, payload.normal);
+	float cos_theta = std::abs(dot(payload.normal, ray.getDir()));
+	Ray secondaryRay(payload.hitPos, rayOut);
+	return lightColor + rayCast(secondaryRay, depth + 1) * cos_theta * brdf / pdf;
 }
 
-vec3 Scene::renderPixel(int x, int y)
-{
-	Ray ray = cam.genPrimaryRay({ x, y });
-	int i = 0;
-	vec3 color = { 0, 0, 0 };
-	while (i++ < 1)
-	{
-		PayLoad payload = intersection(ray);
-		if (!payload.ishit)
-			break;
-		// 计算出射光线
-
-		// 采样光源
-
-		// 更新颜色
-		Material mat = model->mats[payload.matId];
-		color = mat.diffuse * mat.specular;
-	}
-	return color;
+vec3 Scene::sampleHemisphere(const vec3& normal) {
+	std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+	// 随机极坐标生成
+	float phi = genRandomFloat() * 2.0f * M_PI;
+	float cos_theta = genRandomFloat();  // 余弦采样
+	float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
+	vec3 tangent = normalize(cross(normal, vec3(1.0f, 0.0f, 0.0f)));
+	vec3 bitangent = normalize(cross(normal, tangent));
+	vec3 sampleDir
+		= sin_theta * cos(phi) * tangent + sin_theta * sin(phi) * bitangent + cos_theta * normal;
+	return normalize(sampleDir);
 }
