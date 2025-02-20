@@ -12,5 +12,6 @@ using glm::vec3;
 using std::cout;
 using std::endl;
 using std::vector;
+using std::string;
 
 #define M_PI 3.1415926

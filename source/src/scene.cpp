@@ -1,7 +1,9 @@
 #include <cmath>
+#include <sstream>
 #include "scene.hpp"
 #include "log.hpp"
 #include "tinyxml2/tinyxml2.h"
+#include <light.hpp>
 
 Scene::Scene(const std::string sceneDir, const std::string fileName, bool test)
 {
@@ -55,18 +57,26 @@ Scene::Scene(const std::string sceneDir, const std::string fileName, bool test)
 	}
 
 	// 读取光照数据
-	// XMLElement* lightElement = doc.FirstChildElement("light");
-	// if (lightElement) {
-	//    const char* radiance = lightElement->Attribute("radiance");
-	//    if (radiance) {
-	//        std::stringstream ss(radiance);
-	//        ss >> lightRadiance.r;
-	//        ss.ignore(1, ',');  // 跳过逗号
-	//        ss >> lightRadiance.g;
-	//        ss.ignore(1, ',');
-	//        ss >> lightRadiance.b;
-	//    }
-	//}
+	for (XMLElement *lightElement = doc.FirstChildElement("light"); lightElement != nullptr; lightElement = lightElement->NextSiblingElement("light"))
+	{
+		Light lightData;
+		const char *matName = lightElement->Attribute("mtlname");
+		if (matName)
+		{
+			lightData.matName = matName;
+		}
+		const char *radiance = lightElement->Attribute("radiance");
+		if (radiance)
+		{
+			std::stringstream ss(radiance);
+			ss >> lightData.radiance.r;
+			ss.ignore(1, ',');
+			ss >> lightData.radiance.g;
+			ss.ignore(1, ',');
+			ss >> lightData.radiance.b;
+		}
+		lights.push_back(lightData);
+	}
 }
 
 void Scene::render()
@@ -117,8 +127,8 @@ PayLoad Scene::intersection(const Ray &ray) const
 		vec3 v2 = model->vertices[m.indices[2]].pos;
 		vec3 E1 = v1 - v0;
 		vec3 E2 = v2 - v0;
-		vec3 T = ray.get_origin() - v0;
-		vec3 D = normalize(ray.get_dir());
+		vec3 T = ray.getOrigin() - v0;
+		vec3 D = normalize(ray.getDir());
 		vec3 P = cross(D, E2);
 		vec3 Q = cross(T, E1);
 		float p_e1 = dot(P, E1);
@@ -136,7 +146,7 @@ PayLoad Scene::intersection(const Ray &ray) const
 				payload.uv = {u, v};
 				vec3 normal = (model->vertices[m.indices[0]].normal + model->vertices[m.indices[1]].normal + model->vertices[m.indices[2]].normal) / 3.0f;
 				payload.normal = normalize(normal);
-				payload.mat_id = model->triangles[j].mat_id;
+				payload.matId = model->triangles[j].matId;
 			}
 		}
 	}
@@ -158,7 +168,7 @@ vec3 Scene::renderPixel(int x, int y)
 		// 采样光源
 
 		// 更新颜色
-		Material mat = model->mats[payload.mat_id];
+		Material mat = model->mats[payload.matId];
 		color = mat.Kd * mat.Ks;
 	}
 	return color;

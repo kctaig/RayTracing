@@ -26,10 +26,11 @@ void Film::saveToFile(const std::string fileName)
 		for (int x = 0; x < width; x++)
 		{
 			const glm::vec3 &color = getPixel(x, y);
-			glm::ivec3 color_i = glm::clamp(color * 255.f, 0.f, 255.f);
-			outfile << static_cast<uint8_t>(color_i.x)
-					<< static_cast<uint8_t>(color_i.y)
-					<< static_cast<uint8_t>(color_i.z);
+			glm::ivec3 pixelColor = glm::clamp(color * 255.f, 0.f, 255.f);
+			outfile << static_cast<uint8_t>(pixelColor.x)
+					<< static_cast<uint8_t>(pixelColor.y)
+					<< static_cast<uint8_t>(pixelColor.z);
 		}
 	}
+	outfile.close();
 }

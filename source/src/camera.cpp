@@ -20,13 +20,13 @@ Ray Camera::generateRay(const glm::ivec2 &pixelCoord, const glm::vec2 &offsets) 
 	float y = 1.0f - (2.0f * (pixelCoord.y + 0.5f) / float(height));
 
 	// 根据透视投影计算反向光线
-	glm::vec4 ray_clip(x, y, -1.0f, 1.0f);
-	glm::vec4 ray_eye = glm::inverse(projection) * ray_clip;
-	ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
+	glm::vec4 rayClip(x, y, -1.0f, 1.0f);
+	glm::vec4 rayEye = glm::inverse(projection) * rayClip;
+	rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
 
 	// 转换到世界空间
-	vec3 ray_direction = normalize(glm::vec3(glm::inverse(view) * ray_eye));
+	vec3 rayDir = normalize(glm::vec3(glm::inverse(view) * rayEye));
 
 	// 返回光线
-	return Ray{eye, ray_direction};
+	return Ray{eye, rayDir};
 }

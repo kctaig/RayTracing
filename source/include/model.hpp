@@ -3,9 +3,11 @@
 #include "head_include.hpp"
 #include "Ray.hpp"
 #include "material.hpp"
+#include "light.hpp"
 
 struct Vertex
 {
+	Vertex(vec3 pos):pos(pos) {}
 	vec3 pos;
 	vec3 normal;
 };
@@ -13,21 +15,18 @@ struct Vertex
 struct Mesh
 {
 	vector<int> indices;
-	int mat_id;
+	int matId;
 };
 
 class Model
 {
 public:
 	Model() {}
-	Model(const std::string, const std::string);
+	Model(const std::string, const std::string, vector<Light>&lights);
 
 	void modelInfo();
 
-	void intersection(const Ray &, PayLoad &, float &, float &) const;
-
 	vector<Material> mats;
-
 	vector<Vertex> vertices;
 	vector<Mesh> triangles;
 };

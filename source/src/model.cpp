@@ -1,10 +1,9 @@
 #include "head_include.hpp"
 #include "model.hpp"
-
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
-Model::Model(const std::string fileDir, const std::string fileName)
+Model::Model(const std::string fileDir, const std::string fileName, vector<Light>& lights)
 {
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.mtl_search_path = fileDir; // Path to material files
@@ -24,34 +23,46 @@ Model::Model(const std::string fileDir, const std::string fileName)
 		cout << "TinyObshapesjReader: " << reader.Warning();
 	}
 
-	auto &attrib = reader.GetAttrib();
-	auto &shapes = reader.GetShapes();
-	auto &materials = reader.GetMaterials();
+	auto& attrib = reader.GetAttrib();
+	auto& shapes = reader.GetShapes();
+	auto& materials = reader.GetMaterials();
 
 	// 添加模型的顶点
 	for (size_t i = 0; i < attrib.vertices.size(); i += 3)
 	{
 		glm::vec3 v_pos = glm::vec3(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
-		Vertex *v = new Vertex();
-		v->pos = v_pos;
-		this->vertices.push_back(*v);
+		vertices.push_back(Vertex(v_pos));
 	}
 
-	mats.resize(materials.size() + 1);
+	// 添加材质
+	std::unordered_map<std::string, bool> judgeLight;
+	std::unordered_map<std::string, int> nameToId;
+	mats.resize(materials.size());
 	for (size_t i = 0; i < materials.size(); i++)
 	{
 		vec3 diffuse = vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]);
 		vec3 specular = vec3(materials[i].specular[0], materials[i].specular[1], materials[i].specular[2]);
 		vec3 transmittance = vec3(materials[i].transmittance[0], materials[i].transmittance[1], materials[i].transmittance[2]);
 
-		Material mat(materials[i].name,
-					 diffuse,
-					 diffuse,
-					 transmittance,
-					 materials[i].shininess,
-					 materials[i].ior);
+		Material mat = Material(materials[i].name,
+			diffuse,
+			diffuse,
+			transmittance,
+			materials[i].shininess,
+			materials[i].ior);
+		mats[i] = mat;
 
-		mats[i + 1] = mat;
+
+		// 光源材质id
+		for (int j = 0; j < lights.size(); j++)
+		{
+			if (lights[j].matName == mat.matName)
+			{
+				judgeLight[mat.matName] = true;
+				nameToId[mat.matName] = j;
+				break;
+			}
+		}
 	}
 
 	// 将模型数据保存到Model中
@@ -75,13 +86,19 @@ Model::Model(const std::string fileDir, const std::string fileName)
 					tinyobj::real_t nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
 					tinyobj::real_t ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
 					tinyobj::real_t nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
-					this->vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
+					vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
 				}
 			}
 
 			// 每个面的材质id
-			mesh->mat_id = shapes[i].mesh.material_ids[m];
-			this->triangles.push_back(*mesh);
+			mesh->matId = shapes[i].mesh.material_ids[m];
+			// 提取光源
+			if (judgeLight[mats[mesh->matId].matName])
+			{
+				int lightId = nameToId[mats[mesh->matId].matName];
+				lights[lightId].meshes.push_back(*mesh);
+			}
+			triangles.push_back(*mesh);
 			mesh_vertex_offset += each_mesh_vertex_num;
 		}
 	}
@@ -90,8 +107,8 @@ Model::Model(const std::string fileDir, const std::string fileName)
 void Model::modelInfo()
 {
 	// 调试信息
-	cout << "# of vertices  : " << (this->vertices.size()) << endl;
-	cout << "# of meshes   : " << (this->triangles.size()) << endl;
+	cout << "# of vertices  : " << vertices.size() << endl;
+	cout << "# of meshes   : " << triangles.size() << endl;
 
 	//// 打印顶点
 	// cout << "start print vertices: \n";

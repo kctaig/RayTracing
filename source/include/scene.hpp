@@ -18,4 +18,5 @@ public:
 
 	Camera cam;
 	Model *model;
+	vector<Light> lights;
 };
