@@ -2,7 +2,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
-Ray Camera::generateRay(const glm::ivec2 &pixelCoord, const glm::vec2 &offsets) const
+Ray Camera::genPrimaryRay(const glm::ivec2& pixelCoord) const
 {
 	float width = static_cast<float>(filmPtr->width);
 	float height = static_cast<float>(filmPtr->height);
@@ -15,9 +15,19 @@ Ray Camera::generateRay(const glm::ivec2 &pixelCoord, const glm::vec2 &offsets) 
 	float aspect = width / height;
 	mat4 projection = glm::perspective(glm::radians(fovy), aspect, 0.1f, 100.0f);
 	mat4 view = glm::lookAt(eye, lookat, up);
+
+	// 添加扰动
+	float disturbed_x = static_cast<float>(pixelCoord.x) + genRandF(1.0);
+	disturbed_x = std::max(0.f, std::min(static_cast<float>(width - 1), disturbed_x));
+	float disturbed_y = static_cast<float>(pixelCoord.y) + genRandF(1.0);
+	disturbed_y = std::max(0.f, std::min(static_cast<float>(height - 1), disturbed_y));
+
 	// 计算屏幕坐标
-	float x = (2.0f * (pixelCoord.x + 0.5f) / float(width)) - 1.0f;
-	float y = 1.0f - (2.0f * (pixelCoord.y + 0.5f) / float(height));
+	//float x = (2.0f * (pixelCoord.x + 0.5f) / float(width)) - 1.0f;
+	//float y = 1.0f - (2.0f * (pixelCoord.y + 0.5f) / float(height));
+
+	float x = (2.0f * disturbed_x / float(width)) - 1.0f;
+	float y = 1.0f - (2.0f * disturbed_y / float(height));
 
 	// 根据透视投影计算反向光线
 	glm::vec4 rayClip(x, y, -1.0f, 1.0f);
@@ -28,5 +38,5 @@ Ray Camera::generateRay(const glm::ivec2 &pixelCoord, const glm::vec2 &offsets) 
 	vec3 rayDir = normalize(glm::vec3(glm::inverse(view) * rayEye));
 
 	// 返回光线
-	return Ray{eye, rayDir};
+	return Ray{ eye, rayDir };
 }

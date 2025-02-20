@@ -4,6 +4,7 @@
 #include "log.hpp"
 #include "tinyxml2/tinyxml2.h"
 #include <light.hpp>
+#include <random>
 
 Scene::Scene(const std::string sceneDir, const std::string fileName, bool test)
 {
@@ -20,7 +21,7 @@ Scene::Scene(const std::string sceneDir, const std::string fileName, bool test)
 	}
 
 	// 读取摄像机数据
-	XMLElement *cameraElement = doc.FirstChildElement("camera");
+	XMLElement* cameraElement = doc.FirstChildElement("camera");
 	if (cameraElement)
 	{
 		int width = cameraElement->IntAttribute("width");
@@ -28,27 +29,27 @@ Scene::Scene(const std::string sceneDir, const std::string fileName, bool test)
 		float fovy = cameraElement->FloatAttribute("fovy");
 
 		// 读取 <eye> 元素
-		XMLElement *eyeElement = cameraElement->FirstChildElement("eye");
+		XMLElement* eyeElement = cameraElement->FirstChildElement("eye");
 		vec3 eye = vec3(
 			eyeElement->FloatAttribute("x"),
 			eyeElement->FloatAttribute("y"),
 			eyeElement->FloatAttribute("z"));
 
 		// 读取 <lookat> 元素
-		XMLElement *lookatElement = cameraElement->FirstChildElement("lookat");
+		XMLElement* lookatElement = cameraElement->FirstChildElement("lookat");
 		vec3 lookat = vec3(
 			lookatElement->FloatAttribute("x"),
 			lookatElement->FloatAttribute("y"),
 			lookatElement->FloatAttribute("z"));
 
 		// 读取 <up> 元素
-		XMLElement *upElement = cameraElement->FirstChildElement("up");
+		XMLElement* upElement = cameraElement->FirstChildElement("up");
 		vec3 up = vec3(
 			upElement->FloatAttribute("x"),
 			upElement->FloatAttribute("y"),
 			upElement->FloatAttribute("z"));
 
-		Film *filmPtr = new Film();
+		Film* filmPtr = new Film();
 		if (!test)
 			filmPtr->reset(width, height);
 		Camera cam(eye, lookat, up, fovy);
@@ -57,15 +58,15 @@ Scene::Scene(const std::string sceneDir, const std::string fileName, bool test)
 	}
 
 	// 读取光照数据
-	for (XMLElement *lightElement = doc.FirstChildElement("light"); lightElement != nullptr; lightElement = lightElement->NextSiblingElement("light"))
+	for (XMLElement* lightElement = doc.FirstChildElement("light"); lightElement != nullptr; lightElement = lightElement->NextSiblingElement("light"))
 	{
 		Light lightData;
-		const char *matName = lightElement->Attribute("mtlname");
+		const char* matName = lightElement->Attribute("mtlname");
 		if (matName)
 		{
 			lightData.matName = matName;
 		}
-		const char *radiance = lightElement->Attribute("radiance");
+		const char* radiance = lightElement->Attribute("radiance");
 		if (radiance)
 		{
 			std::stringstream ss(radiance);
@@ -84,21 +85,20 @@ void Scene::render()
 	auto w = cam.filmPtr->width;
 	auto h = cam.filmPtr->height;
 
-	// Logger logger("D:/code/RayTracing/output/dragon.log");
 	int count = 0;
 #pragma omp parallel for
 	for (int j = 0; j < h; j++)
 	{
 		for (int i = 0; i < w; i++)
 		{
-			vec3 color = renderPixel(i, j);
-			cam.filmPtr->setPixel(i, j, color);
+			vec3 color = { 0, 0, 0 };
+			for (int k = 0; k < numSamples; k++) {
+				color += renderPixel(i, j);
+			}
+			cam.filmPtr->setPixel(i, j, static_cast<float>(1.0) / static_cast<float>(numSamples) * color);
 
-			// 更新已完成的进度
 #pragma omp atomic
 			count++;
-
-			// 输出当前进度
 			if (count % (w * h / 10) == 0)
 			{
 				double progress = (static_cast<float>(count) / (w * h)) * 100;
@@ -110,12 +110,10 @@ void Scene::render()
 		}
 	}
 	std::cout << "Final Progress: 100%" << std::endl;
-
-	// logger.RestoreOriginalBuffers();
 	cam.filmPtr->saveToFile("../../output/image.ppm");
 }
 
-PayLoad Scene::intersection(const Ray &ray) const
+PayLoad Scene::intersection(const Ray& ray) const
 {
 	float tMin = 0.0f, tMax = 1e10;
 	PayLoad payload;
@@ -143,7 +141,7 @@ PayLoad Scene::intersection(const Ray &ray) const
 				tMax = t;
 				payload.ishit = true;
 				payload.hitPos = ray.at(t);
-				payload.uv = {u, v};
+				payload.uv = { u, v };
 				vec3 normal = (model->vertices[m.indices[0]].normal + model->vertices[m.indices[1]].normal + model->vertices[m.indices[2]].normal) / 3.0f;
 				payload.normal = normalize(normal);
 				payload.matId = model->triangles[j].matId;
@@ -153,11 +151,19 @@ PayLoad Scene::intersection(const Ray &ray) const
 	return payload;
 }
 
+Ray Scene::genSecondaryRay(const PayLoad& payload) const
+{
+	vec3 hitPos = payload.hitPos;
+	vec3 normal = payload.normal;
+	Material mat = model->mats[payload.matId];
+	return Ray(hitPos, normal);
+}
+
 vec3 Scene::renderPixel(int x, int y)
 {
-	Ray ray = cam.generateRay({x, y}, {0.5, 0.5});
+	Ray ray = cam.genPrimaryRay({ x, y });
 	int i = 0;
-	vec3 color = {0, 0, 0};
+	vec3 color = { 0, 0, 0 };
 	while (i++ < 1)
 	{
 		PayLoad payload = intersection(ray);
@@ -169,7 +175,7 @@ vec3 Scene::renderPixel(int x, int y)
 
 		// 更新颜色
 		Material mat = model->mats[payload.matId];
-		color = mat.Kd * mat.Ks;
+		color = mat.diffuse * mat.specular;
 	}
 	return color;
 }

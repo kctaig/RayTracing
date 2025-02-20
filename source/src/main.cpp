@@ -8,8 +8,9 @@ int main()
 	const std::string sceneDir = "../../example-scenes-cg24";
 	const std::string fileName = "cornell-box";
 	Scene scene(sceneDir + "/" + fileName, fileName, true);
-	Model model(sceneDir + "/" + fileName, fileName,scene.lights);
+	Model model(sceneDir + "/" + fileName, fileName, scene.lights);
 	scene.setModel(&model);
+	scene.setNumSamples(1);
 	auto start = std::chrono::high_resolution_clock::now();
 	scene.render();
 	auto end = std::chrono::high_resolution_clock::now();
