@@ -9,6 +9,7 @@ int main()
 	Scene scene(sceneDir + "/" + fileName, fileName, true);
 	Model model(sceneDir + "/" + fileName, fileName, scene.lights);
 	scene.setModel(&model);
+	scene.setMaxDepth(1);
 	scene.setNumSamples(100);
 	scene.render();
 	return 0;

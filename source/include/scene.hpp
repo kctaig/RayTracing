@@ -13,16 +13,15 @@ public:
 
 	void setModel(Model* m) { model = m; }
 	void setNumSamples(int n) { maxNumSample = n; }
+	void setMaxDepth(int n) { maxDepth = n; }
 	PayLoad intersection(const Ray& ray) const;
-	vec3 rayCast(const Ray ray, int depth);
+	vec3 rayCast(const Ray& ray, int depth);
 	vec3 sampleHemisphere(const vec3& normal);
-
-	vec3 test_normal(const Ray ray);
 
 	Camera cam;
 	Model* model;
 	int maxNumSample = 100;
-	int maxDepth = 1;
+	int maxDepth = 10;
 	vector<Light> lights;
 	float rr = 0.7;
 };

@@ -95,7 +95,6 @@ void Scene::render()
 			{
 				Ray ray = cam.genPrimaryRay({ i, j });
 				cam.filmPtr->addToPixel(i, j, rayCast(ray, 0));
-				//cam.filmPtr->setPixel(i, j, test_normal(ray));
 			}
 		}
 		auto end = std::chrono::high_resolution_clock::now();
@@ -144,47 +143,39 @@ PayLoad Scene::intersection(const Ray& ray) const
 	return payload;
 }
 
-vec3 Scene::rayCast(const Ray ray, int depth) {
+vec3 Scene::rayCast(const Ray& ray, int depth) {
 	if (depth >= maxDepth) return vec3{ 0 };
 
 	PayLoad payload = intersection(ray);
-	if (!payload.ishit) return vec3{ 1.0 };
+	if (!payload.ishit) return vec3{ 0 };
 	Material mat = model->mats[payload.matId];
 	//if (mat.lightId >= 0) return lights[mat.lightId].radiance;
 
-	vec3 rayOut = sampleHemisphere(payload.normal);
-	float cos_theta = -dot(payload.normal, ray.getDir());
+	float abs_cos_theta = abs(dot(payload.normal, ray.getDir()));
 
-	// todo: 采样光源                                                                   
-	vec3 priColor = mat.diffuse * cos_theta ;
+	// todo: 采样光源
+	vec3 priColor = mat.diffuse * abs_cos_theta;
 	if (genRandomFloat() > rr) return priColor;
 
 	// 次级光线
+	vec3 rayOut = sampleHemisphere(payload.normal);
 	float pdf = mat.pdf(ray.getDir(), rayOut, payload.normal);
 	vec3 brdf = mat.brdf(ray.getDir(), rayOut, payload.normal);
 	Ray secondaryRay(payload.hitPos, rayOut);
-	vec3 secColor = rayCast(secondaryRay, depth + 1) * cos_theta * brdf / pdf / rr;
+	vec3 secColor = rayCast(secondaryRay, depth + 1) * abs_cos_theta * brdf / pdf / rr;
 	vec3 resultColor = priColor + secColor;
 	return resultColor;
-}
-
-
-vec3 Scene::test_normal(const Ray ray) {
-	PayLoad payload = intersection(ray);
-	if (!payload.ishit) return vec3{ 0 };
-	Material mat = model->mats[payload.matId];
-	float cos_theta = -(dot(ray.getDir(), payload.normal));
-	return cos_theta * mat.diffuse;
 }
 
 vec3 Scene::sampleHemisphere(const vec3& normal) {
 	std::uniform_real_distribution<float> dist(0.0f, 1.0f);
 	// 随机极坐标生成
 	float phi = genRandomFloat() * 2.0f * M_PI;
-	float cos_theta = genRandomFloat();  // 余弦采样
+	float cos_theta = sqrt(genRandomFloat()); // 余弦采样
 	float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
-	vec3 tangent = normalize(cross(normal, vec3(1.0f, 0.0f, 0.0f)));
-	vec3 bitangent = normalize(cross(normal, tangent));
+	vec3 up = (fabs(normal.z) < 0.999) ? vec3(0, 0, 1) : vec3(1, 0, 0);
+	vec3 tangent = normalize(cross(normal, up));
+	vec3 bitangent = cross(normal, tangent);
 	vec3 sampleDir
 		= sin_theta * cos(phi) * tangent + sin_theta * sin(phi) * bitangent + cos_theta * normal;
 	return normalize(sampleDir);
