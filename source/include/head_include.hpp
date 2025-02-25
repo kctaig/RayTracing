@@ -9,10 +9,13 @@
 
 using glm::mat4;
 using glm::vec3;
+using glm::ivec2;
+
 using std::cout;
 using std::endl;
 using std::vector;
 using std::string;
+using std::shared_ptr;
 
 #define M_PI 3.1415926
 

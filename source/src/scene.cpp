@@ -3,7 +3,6 @@
 #include <random>
 #include <chrono>
 #include "scene.hpp"
-#include "log.hpp"
 #include "tinyxml2/tinyxml2.h"
 #include "light.hpp"
 
@@ -109,12 +108,11 @@ PayLoad Scene::intersection(const Ray& ray) const
 {
 	float tMin = 0.0f, tMax = 1e10;
 	PayLoad payload;
-	for (int j = 0; j < model->triangles.size(); j++)
+	for (auto meshPtr : modelPtr->meshPtrs)
 	{
-		Mesh m = model->triangles[j];
-		vec3 v0 = model->vertices[m.indices[0]].pos;
-		vec3 v1 = model->vertices[m.indices[1]].pos;
-		vec3 v2 = model->vertices[m.indices[2]].pos;
+		vec3 v0 = modelPtr->vertices[meshPtr->indices[0]].pos;
+		vec3 v1 = modelPtr->vertices[meshPtr->indices[1]].pos;
+		vec3 v2 = modelPtr->vertices[meshPtr->indices[2]].pos;
 		vec3 E1 = v1 - v0;
 		vec3 E2 = v2 - v0;
 		vec3 T = ray.getOrigin() - v0;
@@ -134,9 +132,12 @@ PayLoad Scene::intersection(const Ray& ray) const
 				payload.ishit = true;
 				payload.hitPos = ray.at(t);
 				payload.uv = { u, v };
-				vec3 normal = (model->vertices[m.indices[0]].normal + model->vertices[m.indices[1]].normal + model->vertices[m.indices[2]].normal) / 3.0f;
+				vec3 normal = (
+					modelPtr->vertices[meshPtr->indices[0]].normal +
+					modelPtr->vertices[meshPtr->indices[1]].normal +
+					modelPtr->vertices[meshPtr->indices[2]].normal) / 3.0f;
 				payload.normal = normalize(normal);
-				payload.matId = model->triangles[j].matId;
+				payload.matId = meshPtr->matId;
 			}
 		}
 	}
@@ -148,7 +149,7 @@ vec3 Scene::rayCast(const Ray& ray, int depth) {
 
 	PayLoad payload = intersection(ray);
 	if (!payload.ishit) return vec3{ 0 };
-	Material mat = model->mats[payload.matId];
+	Material mat = modelPtr->mats[payload.matId];
 	//if (mat.lightId >= 0) return lights[mat.lightId].radiance;
 
 	float abs_cos_theta = abs(dot(payload.normal, ray.getDir()));

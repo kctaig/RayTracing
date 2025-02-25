@@ -1,5 +1,7 @@
 #include "head_include.hpp"
 #include "model.hpp"
+#include "bvh.hpp"
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
@@ -68,15 +70,15 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 		int mesh_num = shapes[i].mesh.num_face_vertices.size(); // 面片数量
 		for (int m = 0; m < mesh_num; m++)
 		{
-			std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
+			std::shared_ptr<Mesh> meshPtr = std::make_shared<Mesh>();
 			int each_mesh_vertex_num = shapes[i].mesh.num_face_vertices[m];
-			mesh->indices.resize(each_mesh_vertex_num);
+			meshPtr->indices.resize(each_mesh_vertex_num);
 			tinyobj::index_t idx;
 			// 查看每个面片的顶点
 			for (int v = 0; v < each_mesh_vertex_num; v++)
 			{
 				idx = shapes[i].mesh.indices[mesh_vertex_offset + v];
-				mesh->indices[v] = idx.vertex_index; // 面片的的顶点索引
+				meshPtr->indices[v] = idx.vertex_index; // 面片的的顶点索引
 				if (idx.normal_index >= 0 && idx.normal_index < this->vertices.size())
 				{
 					tinyobj::real_t nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
@@ -84,16 +86,20 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 					tinyobj::real_t nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
 					vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
 				}
+
+				// todo: 添加纹理坐标
 			}
+			// 每个面的包围盒
+			meshPtr->bboxPtr = std::make_shared<BBOX>(vertices, meshPtr->indices);
 
 			// 每个面的材质id
-			mesh->matId = shapes[i].mesh.material_ids[m];
+			meshPtr->matId = shapes[i].mesh.material_ids[m];
 			// 提取光源
-			if (mats[mesh->matId].lightId >= 0)
+			if (mats[meshPtr->matId].lightId >= 0)
 			{
-				lights[mats[mesh->matId].lightId].meshes.push_back(*mesh);
+				lights[mats[meshPtr->matId].lightId].meshPtrs.push_back(meshPtr);
 			}
-			triangles.push_back(*mesh);
+			meshPtrs.push_back(meshPtr);
 			mesh_vertex_offset += each_mesh_vertex_num;
 		}
 	}
@@ -102,8 +108,8 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 void Model::modelInfo()
 {
 	// 调试信息
-	cout << "# of vertices  : " << vertices.size() << endl;
-	cout << "# of meshes   : " << triangles.size() << endl;
+	cout << "number of vertices  : " << vertices.size() << endl;
+	cout << "number of meshes   : " << meshPtrs.size() << endl;
 
 	//// 打印顶点
 	// cout << "start print vertices: \n";

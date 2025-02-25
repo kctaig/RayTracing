@@ -7,9 +7,9 @@ struct Mesh;
 class Light
 {
 public:
-    Light() {}
+	Light() {}
 
-    vector<Mesh>meshes;
-    string matName;
-    vec3 radiance;
+	vector<shared_ptr<Mesh>>meshPtrs;
+	string matName;
+	vec3 radiance;
 };
