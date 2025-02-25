@@ -95,6 +95,7 @@ void Scene::render()
 			{
 				Ray ray = cam.genPrimaryRay({ i, j });
 				cam.filmPtr->addToPixel(i, j, rayCast(ray, 0));
+				//cam.filmPtr->setPixel(i, j, test_normal(ray));
 			}
 		}
 		auto end = std::chrono::high_resolution_clock::now();
@@ -147,22 +148,33 @@ vec3 Scene::rayCast(const Ray ray, int depth) {
 	if (depth >= maxDepth) return vec3{ 0 };
 
 	PayLoad payload = intersection(ray);
-	if (!payload.ishit) return vec3{ 0 };
+	if (!payload.ishit) return vec3{ 1.0 };
 	Material mat = model->mats[payload.matId];
-	if (mat.lightId >= 0) return lights[mat.lightId].radiance;
+	//if (mat.lightId >= 0) return lights[mat.lightId].radiance;
 
 	vec3 rayOut = sampleHemisphere(payload.normal);
+	float cos_theta = -dot(payload.normal, ray.getDir());
 
-	// todo: 采样光源
-	vec3 lightColor = { 0,0,1 };
-	if (genRandomFloat() > rr) return lightColor;
+	// todo: 采样光源                                                                   
+	vec3 priColor = mat.diffuse * cos_theta ;
+	if (genRandomFloat() > rr) return priColor;
 
 	// 次级光线
 	float pdf = mat.pdf(ray.getDir(), rayOut, payload.normal);
 	vec3 brdf = mat.brdf(ray.getDir(), rayOut, payload.normal);
-	float cos_theta = std::abs(dot(payload.normal, ray.getDir()));
 	Ray secondaryRay(payload.hitPos, rayOut);
-	return lightColor + rayCast(secondaryRay, depth + 1) * cos_theta * brdf / pdf;
+	vec3 secColor = rayCast(secondaryRay, depth + 1) * cos_theta * brdf / pdf / rr;
+	vec3 resultColor = priColor + secColor;
+	return resultColor;
+}
+
+
+vec3 Scene::test_normal(const Ray ray) {
+	PayLoad payload = intersection(ray);
+	if (!payload.ishit) return vec3{ 0 };
+	Material mat = model->mats[payload.matId];
+	float cos_theta = -(dot(ray.getDir(), payload.normal));
+	return cos_theta * mat.diffuse;
 }
 
 vec3 Scene::sampleHemisphere(const vec3& normal) {

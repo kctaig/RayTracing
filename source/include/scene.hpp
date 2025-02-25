@@ -17,6 +17,8 @@ public:
 	vec3 rayCast(const Ray ray, int depth);
 	vec3 sampleHemisphere(const vec3& normal);
 
+	vec3 test_normal(const Ray ray);
+
 	Camera cam;
 	Model* model;
 	int maxNumSample = 100;
