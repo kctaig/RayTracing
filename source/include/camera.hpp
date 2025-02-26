@@ -11,7 +11,7 @@ public:
 
 	Camera(vec3 e, vec3 l, vec3 u, float fovy = 90) : eye(e), lookat(l), up(u), fovy(fovy) {};
 
-	Ray genPrimaryRay(const glm::ivec2& pixelCoord) const;
+	Ray rayCasting(const glm::ivec2& pixelCoord) const;
 
 	Film* filmPtr;
 	vec3 eye;

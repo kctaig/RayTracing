@@ -1,6 +1,7 @@
 #include "head_include.hpp"
 #include "model.hpp"
 #include "bvh.hpp"
+#include <chrono>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
@@ -38,6 +39,7 @@ PayLoad Mesh::intersection(const Ray& ray, const shared_ptr<Model>modelPtr) cons
 
 Model::Model(const std::string fileDir, const std::string fileName, vector<Light>& lights)
 {
+	auto start = std::chrono::high_resolution_clock::now();
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.mtl_search_path = fileDir; // Path to material files
 	tinyobj::ObjReader reader;
@@ -135,13 +137,16 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 			mesh_vertex_offset += each_mesh_vertex_num;
 		}
 	}
+	auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
+	cout << "Model Build Time: " << duration.count() << " seconds" << endl;
+	modelInfo();
 }
 
 void Model::modelInfo()
 {
 	// 调试信息
-	cout << "number of vertices  : " << vertices.size() << endl;
-	cout << "number of meshes   : " << meshPtrs.size() << endl;
+	cout << "Number of Vertices  : " << vertices.size() << endl;
+	cout << "Number of Meshes   : " << meshPtrs.size() << endl;
 
 	//// 打印顶点
 	// cout << "start print vertices: \n";

@@ -99,13 +99,12 @@ void Scene::render()
 #pragma omp parallel for
 		for (int i = 0; i < pixels.size(); i++)
 		{
-			Ray ray = cam.genPrimaryRay({ pixels[i].x, pixels[i].y });
+			Ray ray = cam.rayCasting({ pixels[i].x, pixels[i].y });
 			vec3 color = rayTracing(ray, 0);
 			cam.filmPtr->addToPixel(pixels[i].x, pixels[i].y, color);
 		}
 
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+		auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 		cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
 		cam.filmPtr->saveToFile("../../output/image.ppm", ssp);
 	}
@@ -113,7 +112,10 @@ void Scene::render()
 
 void Scene::BVHBuild()
 {
+	auto start = std::chrono::high_resolution_clock::now();
 	bvhPtr = std::make_shared<BVH>(*modelPtr, modelPtr->meshPtrs);
+	auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
+	cout << "BVH Build Time: " << duration.count() << " seconds" << endl;
 }
 
 bool Scene::intersection(const Ray& ray, PayLoad& payload) const
