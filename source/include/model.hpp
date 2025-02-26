@@ -33,7 +33,7 @@ public:
 
 	void modelInfo();
 
-	vector<Material> mats;
+	vector<Material> modelMats;
 	vector<Vertex> vertices;
 	vector<std::shared_ptr<Mesh>> meshPtrs;
 };

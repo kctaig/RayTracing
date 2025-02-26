@@ -3,8 +3,6 @@
 
 float Material::pdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
 {
-	float cos_theta = dot(ray_out, normal);
-	assert(cos_theta > 0.0f);
 	return 1.0 / (2.0f * M_PI);
 }
 

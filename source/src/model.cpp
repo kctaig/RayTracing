@@ -68,30 +68,30 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 	}
 
 	// 添加材质
-	mats.resize(materials.size());
+	modelMats.resize(materials.size());
 	for (size_t i = 0; i < materials.size(); i++)
 	{
 		vec3 diffuse = vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]);
 		vec3 specular = vec3(materials[i].specular[0], materials[i].specular[1], materials[i].specular[2]);
 		vec3 transmittance = vec3(materials[i].transmittance[0], materials[i].transmittance[1], materials[i].transmittance[2]);
 
-		Material mat = Material(materials[i].name,
+		Material newMat = Material(materials[i].name,
 			diffuse,
 			diffuse,
 			transmittance,
 			materials[i].shininess,
 			materials[i].ior);
-		mats[i] = mat;
 
 		// 光源材质id
 		for (int j = 0; j < lights.size(); j++)
 		{
-			if (lights[j].matName == mat.matName)
+			if (lights[j].matName == newMat.matName)
 			{
-				mat.lightId = j;
+				newMat.lightId = j;
 				break;
 			}
 		}
+		modelMats[i] = newMat;
 	}
 
 	// 将模型数据保存到Model中
@@ -126,9 +126,10 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 			// 每个面的材质id
 			meshPtr->matId = shapes[i].mesh.material_ids[m];
 			// 提取光源
-			if (mats[meshPtr->matId].lightId >= 0)
+			int lightId = modelMats[meshPtr->matId].lightId;
+			if (lightId >= 0)
 			{
-				lights[mats[meshPtr->matId].lightId].meshPtrs.push_back(meshPtr);
+				lights[lightId].meshPtrs.push_back(meshPtr);
 			}
 			meshPtrs.push_back(meshPtr);
 			mesh_vertex_offset += each_mesh_vertex_num;

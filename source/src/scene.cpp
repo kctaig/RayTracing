@@ -161,10 +161,11 @@ vec3 Scene::rayTracing(const Ray& ray, int depth) {
 	bool inter = intersection(ray, modelPtr, payload);
 	//bool inter = intersection(ray, payload);
 	if (!inter) return vec3{ 0 };
-	Material mat = modelPtr->mats[payload.matId];
-	if (mat.lightId >= 0) return lights[mat.lightId].radiance * mat.diffuse;
+	Material mat = modelPtr->modelMats[payload.matId];
+	if (mat.lightId >= 0)
+		return lights[mat.lightId].radiance;
 
-	float cos_theta = dot(payload.normal, ray.getDir());
+	float cos_theta = fabs(dot(payload.normal, ray.getDir()));
 
 	// todo: 采样光源
 	vec3 priColor = mat.diffuse * cos_theta;
@@ -176,7 +177,7 @@ vec3 Scene::rayTracing(const Ray& ray, int depth) {
 	vec3 brdf = mat.brdf(ray.getDir(), rayOut, payload.normal);
 	Ray secondaryRay(payload.hitPos, rayOut);
 	vec3 secColor = rayTracing(secondaryRay, depth + 1) * cos_theta * brdf / pdf / rr;
-	vec3 resultColor = priColor + secColor;
+	vec3 resultColor = priColor + mat.diffuse * secColor;
 	return resultColor;
 }
 
