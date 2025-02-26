@@ -10,13 +10,13 @@ public:
 	BVH() {
 		left = nullptr;
 		right = nullptr;
-		bbox = BBOX();
+		bboxPtr = std::make_shared<BBox>();
 	}
 
-	BVH(const Model& model, vector<shared_ptr<Mesh>>& meshPtrs);
-
-	BBOX bbox;
+	BVH(const Model& model, const vector<shared_ptr<Mesh>>& meshPtrs);
+	bool intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const;
+	shared_ptr<BBox> bboxPtr;
 	vector<std::shared_ptr<Mesh>> meshPtrs;
-	BVH* left;
-	BVH* right;
+	shared_ptr<BVH> left;
+	shared_ptr<BVH> right;
 };

@@ -2,7 +2,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
-Ray Camera::genPrimaryRay(const glm::ivec2& pixelCoord) const
+Ray Camera::genPrimaryRay(const ivec2& pixelCoord) const
 {
 	float width = static_cast<float>(filmPtr->width);
 	float height = static_cast<float>(filmPtr->height);
@@ -32,7 +32,7 @@ Ray Camera::genPrimaryRay(const glm::ivec2& pixelCoord) const
 	rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
 
 	// 转换到世界空间
-	vec3 rayDir = normalize(glm::vec3(glm::inverse(view) * rayEye));
+	vec3 rayDir = normalize(vec3(glm::inverse(view) * rayEye));
 
 	// 返回光线
 	return Ray{ eye, rayDir };

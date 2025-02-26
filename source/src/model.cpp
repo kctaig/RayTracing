@@ -5,6 +5,37 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
+PayLoad Mesh::intersection(const Ray& ray, const shared_ptr<Model>modelPtr) const {
+	PayLoad payload{};
+	vec3 v0 = modelPtr->vertices[indices[0]].pos;
+	vec3 v1 = modelPtr->vertices[indices[1]].pos;
+	vec3 v2 = modelPtr->vertices[indices[2]].pos;
+	vec3 E1 = v1 - v0;
+	vec3 E2 = v2 - v0;
+	vec3 T = ray.getOrigin() - v0;
+	vec3 D = normalize(ray.getDir());
+	vec3 P = cross(D, E2);
+	vec3 Q = cross(T, E1);
+	float p_e1 = dot(P, E1);
+	float t = dot(Q, E2) / p_e1;
+	float u = dot(P, T) / p_e1;
+	float v = dot(Q, D) / p_e1;
+
+	if (t >= 0.f && u >= 0 && v >= 0 && 1 - u - v >= 0)
+	{
+		payload.t = t;
+		payload.hitPos = ray.at(t);
+		payload.uv = { u, v };
+		vec3 normal = (
+			modelPtr->vertices[indices[0]].normal +
+			modelPtr->vertices[indices[1]].normal +
+			modelPtr->vertices[indices[2]].normal) / 3.0f;
+		payload.normal = normalize(normal);
+		payload.matId = matId;
+	}
+	return payload;
+}
+
 Model::Model(const std::string fileDir, const std::string fileName, vector<Light>& lights)
 {
 	tinyobj::ObjReaderConfig reader_config;
@@ -90,7 +121,7 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 				// todo: 添加纹理坐标
 			}
 			// 每个面的包围盒
-			meshPtr->bboxPtr = std::make_shared<BBOX>(vertices, meshPtr->indices);
+			meshPtr->bboxPtr = std::make_shared<BBox>(vertices, meshPtr->indices);
 
 			// 每个面的材质id
 			meshPtr->matId = shapes[i].mesh.material_ids[m];

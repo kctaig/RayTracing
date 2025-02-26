@@ -2,16 +2,16 @@
 #include <sstream>
 #include <random>
 #include <chrono>
-#include "scene.hpp"
 #include "tinyxml2/tinyxml2.h"
 #include "light.hpp"
+#include "scene.hpp"
 
-Scene::Scene(const std::string sceneDir, const std::string fileName, bool test)
+Scene::Scene(const string sceneDir, const string fileName, bool test)
 {
 	using namespace tinyxml2;
 
 	// 加载 XML 文件
-	const std::string xmlFile = sceneDir + "/" + fileName + ".xml";
+	const string xmlFile = sceneDir + "/" + fileName + ".xml";
 
 	XMLDocument doc;
 	if (doc.LoadFile(xmlFile.c_str()) != XML_SUCCESS)
@@ -84,30 +84,36 @@ void Scene::render()
 {
 	auto w = cam.filmPtr->width;
 	auto h = cam.filmPtr->height;
-	int k = 0;
-	while (++k < maxNumSample) {
-		auto start = std::chrono::high_resolution_clock::now();
-#pragma omp parallel for
+	int ssp = 0;
+	while (++ssp < maxNumSample) {
+		vector<glm::ivec2> pixels;
 		for (int j = 0; j < h; j++)
 		{
 			for (int i = 0; i < w; i++)
 			{
-				Ray ray = cam.genPrimaryRay({ i, j });
-				cam.filmPtr->addToPixel(i, j, rayCast(ray, 0));
+				pixels.push_back({ i, j });
 			}
 		}
+		auto start = std::chrono::high_resolution_clock::now();
+
+#pragma omp parallel for
+		for (int i = 0; i < pixels.size(); i++)
+		{
+			Ray ray = cam.genPrimaryRay({ pixels[i].x, pixels[i].y });
+			vec3 color = rayTracing(ray, 0);
+			cam.filmPtr->addToPixel(pixels[i].x, pixels[i].y, color);
+		}
+
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-		cout << "Sample: " << k << " Elapsed time: " << duration.count() << " seconds" << endl;
-
-		cam.filmPtr->saveToFile("../../output/image.ppm", k);
+		cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
+		cam.filmPtr->saveToFile("../../output/image.ppm", ssp);
 	}
 }
 
-PayLoad Scene::intersection(const Ray& ray) const
+bool Scene::intersection(const Ray& ray, PayLoad& payload) const
 {
-	float tMin = 0.0f, tMax = 1e10;
-	PayLoad payload;
+	bool inter = false;
 	for (auto meshPtr : modelPtr->meshPtrs)
 	{
 		vec3 v0 = modelPtr->vertices[meshPtr->indices[0]].pos;
@@ -124,12 +130,12 @@ PayLoad Scene::intersection(const Ray& ray) const
 		float u = dot(P, T) / p_e1;
 		float v = dot(Q, D) / p_e1;
 
-		if (t >= tMin && u >= 0 && v >= 0 && 1 - u - v >= 0)
+		if (t >= 0.f && u >= 0 && v >= 0 && 1 - u - v >= 0)
 		{
-			if (t < tMax)
+			if (t < payload.t)
 			{
-				tMax = t;
-				payload.ishit = true;
+				inter = true;
+				payload.t = t;
 				payload.hitPos = ray.at(t);
 				payload.uv = { u, v };
 				vec3 normal = (
@@ -141,21 +147,27 @@ PayLoad Scene::intersection(const Ray& ray) const
 			}
 		}
 	}
-	return payload;
+	return inter;
 }
 
-vec3 Scene::rayCast(const Ray& ray, int depth) {
+bool Scene::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const {
+	assert(bvhPtr);
+	return bvhPtr->intersection(ray, modelPtr, payload);
+}
+
+vec3 Scene::rayTracing(const Ray& ray, int depth) {
 	if (depth >= maxDepth) return vec3{ 0 };
-
-	PayLoad payload = intersection(ray);
-	if (!payload.ishit) return vec3{ 0 };
+	PayLoad payload;
+	bool inter = intersection(ray, modelPtr, payload);
+	//bool inter = intersection(ray, payload);
+	if (!inter) return vec3{ 0 };
 	Material mat = modelPtr->mats[payload.matId];
-	//if (mat.lightId >= 0) return lights[mat.lightId].radiance;
+	if (mat.lightId >= 0) return lights[mat.lightId].radiance * mat.diffuse;
 
-	float abs_cos_theta = abs(dot(payload.normal, ray.getDir()));
+	float cos_theta = dot(payload.normal, ray.getDir());
 
 	// todo: 采样光源
-	vec3 priColor = mat.diffuse * abs_cos_theta;
+	vec3 priColor = mat.diffuse * cos_theta;
 	if (genRandomFloat() > rr) return priColor;
 
 	// 次级光线
@@ -163,7 +175,7 @@ vec3 Scene::rayCast(const Ray& ray, int depth) {
 	float pdf = mat.pdf(ray.getDir(), rayOut, payload.normal);
 	vec3 brdf = mat.brdf(ray.getDir(), rayOut, payload.normal);
 	Ray secondaryRay(payload.hitPos, rayOut);
-	vec3 secColor = rayCast(secondaryRay, depth + 1) * abs_cos_theta * brdf / pdf / rr;
+	vec3 secColor = rayTracing(secondaryRay, depth + 1) * cos_theta * brdf / pdf / rr;
 	vec3 resultColor = priColor + secColor;
 	return resultColor;
 }

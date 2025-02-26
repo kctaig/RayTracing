@@ -5,7 +5,7 @@
 #include "material.hpp"
 #include "light.hpp"
 
-class BBOX;
+class BBox;
 
 struct Vertex
 {
@@ -14,11 +14,15 @@ struct Vertex
 	vec3 normal;
 };
 
+class Model;
+
 struct Mesh
 {
 	vector<int> indices;
 	int matId;
-	shared_ptr<BBOX> bboxPtr;
+	shared_ptr<BBox> bboxPtr;
+
+	PayLoad intersection(const Ray& ray, const shared_ptr<Model>modelPtr) const;
 };
 
 class Model

@@ -6,7 +6,7 @@ class Film
 {
 public:
 	// 用于测试的分辨率
-	Film() : width(100), height(100)
+	Film() : width(200), height(200)
 	{
 		pixels.resize(width * height);
 	}

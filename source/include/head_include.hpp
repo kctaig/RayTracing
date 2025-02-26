@@ -7,9 +7,13 @@
 #include <random>
 #include <glm/glm.hpp>
 
-using glm::mat4;
-using glm::vec3;
 using glm::ivec2;
+using glm::vec2;
+using glm::vec3;
+using glm::mat4;
+using glm::normalize;
+using glm::cross;
+using glm::dot;
 
 using std::cout;
 using std::endl;

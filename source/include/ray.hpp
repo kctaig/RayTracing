@@ -5,11 +5,13 @@
 class PayLoad
 {
 public:
-	bool ishit = false;
+	PayLoad() : matId(-1), hitPos(vec3(0)), normal(vec3(0)), uv(vec2(0)), t(FLT_MAX) {}
+
 	int matId;
 	vec3 hitPos;
 	vec3 normal;
-	glm::vec2 uv;
+	vec2 uv;
+	float t;
 };
 
 class Ray

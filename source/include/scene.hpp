@@ -16,15 +16,16 @@ public:
 	void BVHBuild() { bvhPtr = std::make_shared<BVH>(*modelPtr, modelPtr->meshPtrs); }
 	void setNumSamples(int n) { maxNumSample = n; }
 	void setMaxDepth(int n) { maxDepth = n; }
-	PayLoad intersection(const Ray& ray) const;
-	vec3 rayCast(const Ray& ray, int depth);
+	bool intersection(const Ray& ray, PayLoad& payload) const;
+	bool intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const;
+	vec3 rayTracing(const Ray& ray, int depth);
 	vec3 sampleHemisphere(const vec3& normal);
 
 	Camera cam;
 	shared_ptr<Model> modelPtr;
 	shared_ptr<BVH>bvhPtr;
 	int maxNumSample = 100;
-	int maxDepth = 10;
+	int maxDepth = 1;
 	vector<Light> lights;
 	float rr = 0.7;
 };
