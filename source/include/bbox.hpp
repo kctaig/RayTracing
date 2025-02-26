@@ -22,6 +22,8 @@ public:
 
 	bool intersection(const Ray& ray) const;
 
+	vec3 center();
+
 	vec3 min;
 	vec3 max;
 };

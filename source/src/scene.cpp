@@ -111,6 +111,11 @@ void Scene::render()
 	}
 }
 
+void Scene::BVHBuild()
+{
+	bvhPtr = std::make_shared<BVH>(*modelPtr, modelPtr->meshPtrs);
+}
+
 bool Scene::intersection(const Ray& ray, PayLoad& payload) const
 {
 	bool inter = false;

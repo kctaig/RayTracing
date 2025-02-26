@@ -13,9 +13,10 @@ public:
 	void render();
 
 	void setModel(shared_ptr<Model>m) { modelPtr = m; }
-	void BVHBuild() { bvhPtr = std::make_shared<BVH>(*modelPtr, modelPtr->meshPtrs); }
+	void BVHBuild();
 	void setNumSamples(int n) { maxNumSample = n; }
 	void setMaxDepth(int n) { maxDepth = n; }
+	// 未使用加速结构
 	bool intersection(const Ray& ray, PayLoad& payload) const;
 	bool intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const;
 	vec3 rayTracing(const Ray& ray, int depth);

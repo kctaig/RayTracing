@@ -35,3 +35,8 @@ bool BBox::intersection(const Ray& ray) const
 
 	return tNear <= tFar && tFar >= 0.0f;
 }
+
+vec3 BBox::center()
+{
+	return vec3{ 0.5f * (min + max)};
+}
