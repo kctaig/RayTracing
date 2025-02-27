@@ -9,7 +9,7 @@ class Scene
 {
 public:
 	Scene() {}
-	Scene(const std::string fileDir, const std::string fileName, bool test = false);
+	Scene(const std::string fileDir, const std::string fileName);
 	void render();
 
 	void setModel(shared_ptr<Model>m) { modelPtr = m; }

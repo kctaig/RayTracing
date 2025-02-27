@@ -6,10 +6,7 @@ class Film
 {
 public:
 	// 用于测试的分辨率
-	Film() : width(200), height(200)
-	{
-		pixels.resize(width * height);
-	}
+	Film() {}
 
 	Film(int w, int h) : width(w), height(h) { pixels.resize(w * h); }
 	void saveToFile(const std::string fileName, int cur_sample = 1);

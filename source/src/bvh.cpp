@@ -51,11 +51,11 @@ BVH::BVH(const Model& model, const vector<shared_ptr<Mesh>>& meshptrs)
 	vector <shared_ptr<Mesh>> rightMeshes(meshPtrs.begin() + meshPtrs.size() / 2, meshPtrs.end());
 
 	// 并行递归构建左右子树
-	#pragma omp parallel sections 
+#pragma omp parallel sections
 	{
-		#pragma omp section
+#pragma omp section
 		left = std::make_shared<BVH>(model, leftMeshes);
-		#pragma omp section
+#pragma omp section
 		right = std::make_shared<BVH>(model, rightMeshes);
 	}
 }
@@ -67,11 +67,11 @@ bool BVH::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad
 	bool inter = false;
 	if (!left && !right) {
 		for (auto& meshptr : meshPtrs) {
-			PayLoad meshPayLoad = meshptr->intersection(ray, modelPtr);
-			if (meshPayLoad.t < payload.t) {
-				payload = meshPayLoad;
-				inter = true;
-			}
+			inter = inter || meshptr->intersection(ray, payload, modelPtr);
+			//if (meshPayLoad.t < payload.t) {
+			//	payload = meshPayLoad;
+			//	inter = true;
+			//}
 		}
 	}
 	else {

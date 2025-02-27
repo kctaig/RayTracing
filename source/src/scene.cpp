@@ -6,7 +6,7 @@
 #include "light.hpp"
 #include "scene.hpp"
 
-Scene::Scene(const string sceneDir, const string fileName, bool test)
+Scene::Scene(const string sceneDir, const string fileName)
 {
 	using namespace tinyxml2;
 
@@ -49,9 +49,7 @@ Scene::Scene(const string sceneDir, const string fileName, bool test)
 			upElement->FloatAttribute("y"),
 			upElement->FloatAttribute("z"));
 
-		Film* filmPtr = new Film();
-		if (!test)
-			filmPtr->reset(width, height);
+		Film* filmPtr = new Film(width, height);
 		Camera cam(eye, lookat, up, fovy);
 		cam.filmPtr = filmPtr;
 		this->cam = cam;
@@ -85,28 +83,29 @@ void Scene::render()
 	auto w = cam.filmPtr->width;
 	auto h = cam.filmPtr->height;
 	int ssp = 0;
-	while (++ssp < maxNumSample) {
-		vector<glm::ivec2> pixels;
-		for (int j = 0; j < h; j++)
+	vector<glm::ivec2> pixels;
+	for (int j = 0; j < h; j++)
+	{
+		for (int i = 0; i < w; i++)
 		{
-			for (int i = 0; i < w; i++)
-			{
-				pixels.push_back({ i, j });
-			}
+			pixels.push_back({ i, j });
 		}
-		auto start = std::chrono::high_resolution_clock::now();
-
+	}
+	auto start = std::chrono::high_resolution_clock::now();
+	while (++ssp < maxNumSample) {
 #pragma omp parallel for
 		for (int i = 0; i < pixels.size(); i++)
 		{
-			Ray ray = cam.rayCasting({ pixels[i].x, pixels[i].y });
+			Ray ray = cam.genPrimaryRay({ pixels[i].x, pixels[i].y });
 			vec3 color = rayTracing(ray, 0);
 			cam.filmPtr->addToPixel(pixels[i].x, pixels[i].y, color);
 		}
 
-		auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
-		cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
-		cam.filmPtr->saveToFile("../../output/image.ppm", ssp);
+		if (ssp % 5 == 0) {
+			auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
+			cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
+			cam.filmPtr->saveToFile("../../output/image.ppm", ssp);
+		}
 	}
 }
 
@@ -158,34 +157,36 @@ bool Scene::intersection(const Ray& ray, PayLoad& payload) const
 }
 
 bool Scene::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const {
-	assert(bvhPtr);
 	return bvhPtr->intersection(ray, modelPtr, payload);
 }
 
-vec3 Scene::rayTracing(const Ray& ray, int depth) {
+vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (depth >= maxDepth) return vec3{ 0 };
+	if (genRandomFloat() > rr) return vec3(0);
 	PayLoad payload;
-	bool inter = intersection(ray, modelPtr, payload);
-	//bool inter = intersection(ray, payload);
-	if (!inter) return vec3{ 0 };
+	if (!intersection(wo, modelPtr, payload)) return vec3{ 0 };
+
 	Material mat = modelPtr->modelMats[payload.matId];
+
+	// 与光源相交直接返回光源辐射度
 	if (mat.lightId >= 0)
 		return lights[mat.lightId].radiance;
 
-	float cos_theta = fabs(dot(payload.normal, ray.getDir()));
-
 	// todo: 采样光源
-	vec3 priColor = mat.diffuse * cos_theta;
-	if (genRandomFloat() > rr) return priColor;
+	// 选择一个光源，并计算所有光源的面积和
+	// 在光源中选择一个点
+	// 计算光源到交点的方向和距离
+	// 判断是否被遮挡
+	// 如果没被遮挡，计算辐照度
+	vec3 L_dir = vec3(0);
 
 	// 次级光线
-	vec3 rayOut = sampleHemisphere(payload.normal);
-	float pdf = mat.pdf(ray.getDir(), rayOut, payload.normal);
-	vec3 brdf = mat.brdf(ray.getDir(), rayOut, payload.normal);
-	Ray secondaryRay(payload.hitPos, rayOut);
-	vec3 secColor = rayTracing(secondaryRay, depth + 1) * cos_theta * brdf / pdf / rr;
-	vec3 resultColor = priColor + mat.diffuse * secColor;
-	return resultColor;
+	vec3 wi_dir = mat.sampleDir(wo.getDir(), payload.normal);
+	vec3 brdf = mat.brdf(wo.getDir(), wi_dir, payload.normal);
+	float pdf = mat.pdf(wo.getDir(), wi_dir, payload.normal);
+	Ray wi(payload.hitPos, wi_dir);
+	vec3 L_indir = rayTracing(wi, depth + 1) * dot(wi_dir, payload.normal) * brdf / pdf / rr;
+	return L_dir + L_indir;
 }
 
 vec3 Scene::sampleHemisphere(const vec3& normal) {

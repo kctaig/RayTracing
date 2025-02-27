@@ -22,7 +22,7 @@ struct Mesh
 	int matId;
 	shared_ptr<BBox> bboxPtr;
 
-	PayLoad intersection(const Ray& ray, const shared_ptr<Model>modelPtr) const;
+	bool intersection(const Ray& ray, PayLoad& payload, const shared_ptr<Model>modelPtr) const;
 };
 
 class Model

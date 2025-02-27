@@ -11,7 +11,7 @@ void Film::reset(int width, int height)
 	this->pixels.resize(width * height);
 }
 
-void Film::saveToFile(const std::string fileName, int spp)
+void Film::saveToFile(const std::string fileName, int ssp)
 {
 	// 输出 二进制 文件
 	std::ofstream outfile(fileName, std::ios::binary);
@@ -25,7 +25,7 @@ void Film::saveToFile(const std::string fileName, int spp)
 	{
 		for (int x = 0; x < width; x++)
 		{
-			glm::vec3& color = static_cast <float>(1.0) / static_cast<float>(spp) * getPixel(x, y);
+			glm::vec3& color = static_cast <float>(1.0) / static_cast<float>(ssp) * getPixel(x, y);
 			glm::ivec3 pixelColor = glm::clamp(color * 255.f, 0.f, 255.f);
 			outfile << static_cast<uint8_t>(pixelColor.x)
 				<< static_cast<uint8_t>(pixelColor.y)

@@ -2,7 +2,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
-Ray Camera::rayCasting(const ivec2& pixelCoord) const
+Ray Camera::genPrimaryRay(const ivec2& pixelCoord) const
 {
 	float width = static_cast<float>(filmPtr->width);
 	float height = static_cast<float>(filmPtr->height);

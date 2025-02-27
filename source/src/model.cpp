@@ -6,8 +6,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
-PayLoad Mesh::intersection(const Ray& ray, const shared_ptr<Model>modelPtr) const {
-	PayLoad payload{};
+bool Mesh::intersection(const Ray& ray, PayLoad& payload, const shared_ptr<Model>modelPtr) const {
+	bool isHit = false;
 	vec3 v0 = modelPtr->vertices[indices[0]].pos;
 	vec3 v1 = modelPtr->vertices[indices[1]].pos;
 	vec3 v2 = modelPtr->vertices[indices[2]].pos;
@@ -24,17 +24,21 @@ PayLoad Mesh::intersection(const Ray& ray, const shared_ptr<Model>modelPtr) cons
 
 	if (t >= 0.f && u >= 0 && v >= 0 && 1 - u - v >= 0)
 	{
-		payload.t = t;
-		payload.hitPos = ray.at(t);
-		payload.uv = { u, v };
-		vec3 normal = (
-			modelPtr->vertices[indices[0]].normal +
-			modelPtr->vertices[indices[1]].normal +
-			modelPtr->vertices[indices[2]].normal) / 3.0f;
-		payload.normal = normalize(normal);
-		payload.matId = matId;
+		if (t < payload.t)
+		{
+			isHit = true;
+			payload.t = t;
+			payload.hitPos = ray.at(t);
+			payload.uv = { u, v };
+			vec3 normal = (
+				modelPtr->vertices[indices[0]].normal +
+				modelPtr->vertices[indices[1]].normal +
+				modelPtr->vertices[indices[2]].normal) / 3.0f;
+			payload.normal = normalize(normal);
+			payload.matId = matId;
+		}
 	}
-	return payload;
+	return isHit;
 }
 
 Model::Model(const std::string fileDir, const std::string fileName, vector<Light>& lights)
@@ -138,8 +142,8 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 		}
 	}
 	auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
-	cout << "Model Build Time: " << duration.count() << " seconds" << endl;
 	modelInfo();
+	cout << "Model Build Time: " << duration.count() << " seconds" << endl;
 }
 
 void Model::modelInfo()
