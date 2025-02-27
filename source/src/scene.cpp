@@ -162,7 +162,6 @@ bool Scene::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLo
 
 vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (depth >= maxDepth) return vec3{ 0 };
-	if (genRandomFloat() > rr) return vec3(0);
 	PayLoad payload;
 	if (!intersection(wo, modelPtr, payload)) return vec3{ 0 };
 
@@ -172,21 +171,50 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (mat.lightId >= 0)
 		return lights[mat.lightId].radiance;
 
-	// todo: 采样光源
-	// 选择一个光源，并计算所有光源的面积和
-	// 在光源中选择一个点
-	// 计算光源到交点的方向和距离
-	// 判断是否被遮挡
-	// 如果没被遮挡，计算辐照度
+	// 采样光源
+	float pdf_light = 1.f;
+	vec3 lightPos = sampleLight(modelPtr, lights, pdf_light);
+	vec3 ws = normalize(lightPos - payload.hitPos);
+	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
+	// 判断是否遮挡
+	bool isShadow = intersection(Ray(payload.hitPos, ws), modelPtr, lightPayload);
+	if (isShadow && lightPayload.matId == mat.lightId) {
+		float dist = static_cast<float>(std::pow(glm::length(lightPos - payload.hitPos), 2));
+		L_dir = lights[mat.lightId].radiance *
+			dot(ws, payload.normal) *
+			dot(-ws, lightPayload.normal) /
+			dist /
+			pdf_light;
+	}
+
+	if (genRandomFloat() > rr) return L_dir;
 
 	// 次级光线
 	vec3 wi_dir = mat.sampleDir(wo.getDir(), payload.normal);
 	vec3 brdf = mat.brdf(wo.getDir(), wi_dir, payload.normal);
 	float pdf = mat.pdf(wo.getDir(), wi_dir, payload.normal);
 	Ray wi(payload.hitPos, wi_dir);
-	vec3 L_indir = rayTracing(wi, depth + 1) * dot(wi_dir, payload.normal) * brdf / pdf / rr;
+	vec3 L_indir = rayTracing(wi, depth + 1) *
+		dot(wi_dir, payload.normal) *
+		brdf /
+		pdf /
+		rr;
 	return L_dir + L_indir;
+}
+
+vec3 Scene::sampleLight(const shared_ptr<Model>& modelPtr, const vector<Light>& lights, float& pdf_light) {
+	// 随机选择光源
+	float light_id = genRandomFloat() * lights.size();
+	Light light = lights[light_id];
+	pdf_light *= 1.f / lights.size();
+	// 在光源中选择一个mesh
+	float mesh_id = genRandomFloat() * light.meshPtrs.size();
+	shared_ptr<Mesh> meshPtr = light.meshPtrs[mesh_id];
+	pdf_light *= 1.f / light.area;
+	// 在mesh中选择一个点
+	vec3 point = meshPtr->sampleMesh(modelPtr);
+	return point;
 }
 
 vec3 Scene::sampleHemisphere(const vec3& normal) {

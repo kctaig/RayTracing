@@ -21,7 +21,7 @@ public:
 	bool intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const;
 	vec3 rayTracing(const Ray& ray, int depth);
 	vec3 sampleHemisphere(const vec3& normal);
-
+	vec3 sampleLight(const shared_ptr<Model>& modelPtr, const vector<Light>& lights, float& pdf_light);
 	Camera cam;
 	shared_ptr<Model> modelPtr;
 	shared_ptr<BVH>bvhPtr;

@@ -23,6 +23,7 @@ struct Mesh
 	shared_ptr<BBox> bboxPtr;
 
 	bool intersection(const Ray& ray, PayLoad& payload, const shared_ptr<Model>modelPtr) const;
+	vec3 sampleMesh(const shared_ptr<Model>modelPtr);
 };
 
 class Model

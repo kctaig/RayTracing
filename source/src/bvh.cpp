@@ -68,10 +68,6 @@ bool BVH::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad
 	if (!left && !right) {
 		for (auto& meshptr : meshPtrs) {
 			inter = inter || meshptr->intersection(ray, payload, modelPtr);
-			//if (meshPayLoad.t < payload.t) {
-			//	payload = meshPayLoad;
-			//	inter = true;
-			//}
 		}
 	}
 	else {

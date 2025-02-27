@@ -41,6 +41,20 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload, const shared_ptr<Model
 	return isHit;
 }
 
+vec3 Mesh::sampleMesh(const shared_ptr<Model>modelPtr)
+{
+	float r1 = genRandomFloat(), r2 = genRandomFloat();
+	if (r1 + r2 > 1.f) {
+		r1 = 1.f - r1;
+		r2 = 1.f - r2;
+	}
+	vec3 pos = modelPtr->vertices[indices[0]].pos;
+	float x = (1 - r1 - r2) * pos.x + r1 * pos.y + r2 * pos.z;
+	float y = (1 - r1 - r2) * pos.y + r1 * pos.y + r2 * pos.z;
+	float z = (1 - r1 - r2) * pos.z + r1 * pos.y + r2 * pos.z;
+	return vec3(x, y, z);
+}
+
 Model::Model(const std::string fileDir, const std::string fileName, vector<Light>& lights)
 {
 	auto start = std::chrono::high_resolution_clock::now();
@@ -136,6 +150,13 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 			if (lightId >= 0)
 			{
 				lights[lightId].meshPtrs.push_back(meshPtr);
+				// 计算光源的面积
+				vec3 v0 = vertices[meshPtr->indices[0]].pos;
+				vec3 v1 = vertices[meshPtr->indices[1]].pos;
+				vec3 v2 = vertices[meshPtr->indices[2]].pos;
+				vec3 E1 = v1 - v0;
+				vec3 E2 = v2 - v0;
+				lights[lightId].area += length(cross(E1, E2)) / 2.0f;
 			}
 			meshPtrs.push_back(meshPtr);
 			mesh_vertex_offset += each_mesh_vertex_num;
