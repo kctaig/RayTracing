@@ -12,7 +12,7 @@ int main()
 	shared_ptr<Model> modelPtr = std::make_shared<Model>(sceneDir + "/" + fileName, fileName, scene.lights);
 	scene.setModel(modelPtr);
 	scene.BVHBuild();
-	scene.setMaxDepth(5);
+	scene.setMaxDepth(10);
 	scene.setNumSamples(10000);
 	scene.render();
 	return 0;

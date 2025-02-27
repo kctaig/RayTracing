@@ -178,14 +178,17 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
 	// 判断是否遮挡
-	bool isShadow = intersection(Ray(payload.hitPos, ws), modelPtr, lightPayload);
-	if (isShadow && lightPayload.matId == mat.lightId) {
-		float dist = static_cast<float>(std::pow(glm::length(lightPos - payload.hitPos), 2));
-		L_dir = lights[mat.lightId].radiance *
-			dot(ws, payload.normal) *
-			dot(-ws, lightPayload.normal) /
-			dist /
-			pdf_light;
+	bool isHit = intersection(Ray(payload.hitPos, ws), modelPtr, lightPayload);
+	if (isHit) {
+		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
+		float lightDist = glm::length(payload.hitPos - lightPos);
+		if (hitDist - lightDist > -EPLISON) {
+			L_dir = lights[mat.lightId].radiance *
+				dot(ws, payload.normal) *
+				dot(-ws, lightPayload.normal) /
+				static_cast<float>(std::pow(lightDist, 2)) /
+				pdf_light;
+		}
 	}
 
 	if (genRandomFloat() > rr) return L_dir;
@@ -193,12 +196,12 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	// 次级光线
 	vec3 wi_dir = mat.sampleDir(wo.getDir(), payload.normal);
 	vec3 brdf = mat.brdf(wo.getDir(), wi_dir, payload.normal);
-	float pdf = mat.pdf(wo.getDir(), wi_dir, payload.normal);
+	float pdf_scatter = mat.pdf(wo.getDir(), wi_dir, payload.normal);
 	Ray wi(payload.hitPos, wi_dir);
 	vec3 L_indir = rayTracing(wi, depth + 1) *
 		dot(wi_dir, payload.normal) *
 		brdf /
-		pdf /
+		pdf_scatter /
 		rr;
 	return L_dir + L_indir;
 }

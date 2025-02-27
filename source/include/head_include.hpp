@@ -22,6 +22,7 @@ using std::string;
 using std::shared_ptr;
 
 #define M_PI 3.1415926f
+#define EPLISON 0.0001f
 
 static float genRandomFloat(float rangeL = 0.0f, float rangeR = 1.0f) {
 	static std::random_device rd;

@@ -3,13 +3,11 @@
 
 float Material::pdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
 {
-	return  0.5f / M_PI;
+	return 0.5f / M_PI;
 }
 
 vec3 Material::brdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
 {
-	float cos_theta = dot(ray_out, normal);
-	assert(cos_theta > 0.0f);
 	return diffuse / M_PI;
 }
 
