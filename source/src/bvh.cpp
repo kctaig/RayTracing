@@ -1,4 +1,5 @@
 #include "bvh.hpp"
+#include <stack>
 
 BVH::BVH(const Model& model, const vector<shared_ptr<Mesh>>& meshptrs)
 {
@@ -8,7 +9,7 @@ BVH::BVH(const Model& model, const vector<shared_ptr<Mesh>>& meshptrs)
 	{
 		bboxPtr->unionMesh(meshPtr);
 	}
-	if (meshPtrs.size() < numMesh)
+	if (meshPtrs.size() <= numMesh)
 	{
 		left = nullptr;
 		right = nullptr;
@@ -50,31 +51,50 @@ BVH::BVH(const Model& model, const vector<shared_ptr<Mesh>>& meshptrs)
 	vector <shared_ptr<Mesh>> leftMeshes(meshPtrs.begin(), meshPtrs.begin() + meshPtrs.size() / 2);
 	vector <shared_ptr<Mesh>> rightMeshes(meshPtrs.begin() + meshPtrs.size() / 2, meshPtrs.end());
 
-	// 并行递归构建左右子树
-#pragma omp parallel sections
-	{
-#pragma omp section
-		left = std::make_shared<BVH>(model, leftMeshes);
-#pragma omp section
-		right = std::make_shared<BVH>(model, rightMeshes);
-	}
+	left = std::make_shared<BVH>(model, leftMeshes);
+	right = std::make_shared<BVH>(model, rightMeshes);
 }
 
-bool BVH::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const
+bool BVH::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload)
 {
-	// 与该节点的包围盒不相交
-	if (!bboxPtr->intersection(ray)) return false;
-	bool inter = false;
-	if (!left && !right) {
-		for (auto& meshptr : meshPtrs) {
-			inter = inter || meshptr->intersection(ray, payload, modelPtr);
+	//// 与该节点的包围盒不相交
+	//if (!bboxPtr->intersection(ray)) return false;
+	//bool inter = false, leftInter = false, rightInter = false;
+	//if (left) leftInter = left->intersection(ray, modelPtr, payload);
+	//if (right) rightInter = right->intersection(ray, modelPtr, payload);
+	//if (!left && !right) {
+	//	PayLoad tempPayload;
+	//	for (auto& meshptr : meshPtrs) {
+	//		bool isHit = meshptr->intersection(ray, tempPayload, modelPtr);
+	//		if (isHit && tempPayload.t < payload.t) {
+	//			inter = true;
+	//			payload = tempPayload;
+	//		}
+	//	}
+	//}
+	//inter = inter || leftInter || rightInter;
+	//return inter;
+
+	std::stack<BVH*> stack;
+	stack.push(this);
+	float rec_t = payload.t;
+	bool isHit = false;
+	while (!stack.empty()) {
+		auto current = stack.top();
+		stack.pop();
+		if (!current->bboxPtr->intersection(ray)) continue;
+		if (!current->left && !current->right) {
+			// 叶子节点：检查所有网格
+			for (auto& meshptr : current->meshPtrs) {
+				if (meshptr->intersection(ray, payload, modelPtr))
+					isHit = true;
+			}
+		}
+		else {
+			// 非叶子节点：将左右子树压入栈
+			if (current->left) stack.push(current->left.get());
+			if (current->right) stack.push(current->right.get());
 		}
 	}
-	else {
-		// 递归调用左右子树
-		bool leftInter = left && left->intersection(ray, modelPtr, payload);
-		bool rightInter = right && right->intersection(ray, modelPtr, payload);
-		inter = leftInter || rightInter;
-	}
-	return inter;
+	return isHit;
 }

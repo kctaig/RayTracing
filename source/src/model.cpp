@@ -30,10 +30,10 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload, const shared_ptr<Model
 			payload.t = t;
 			payload.hitPos = ray.at(t);
 			payload.uv = { u, v };
-			vec3 normal = (
-				modelPtr->vertices[indices[0]].normal +
-				modelPtr->vertices[indices[1]].normal +
-				modelPtr->vertices[indices[2]].normal) / 3.0f;
+			vec3 normal =
+				modelPtr->vertices[indices[0]].normal * (1.f - u - v) +
+				modelPtr->vertices[indices[1]].normal * u +
+				modelPtr->vertices[indices[2]].normal * v;
 			payload.normal = normalize(normal);
 			payload.matId = matId;
 		}
@@ -48,11 +48,7 @@ vec3 Mesh::sampleMesh(const shared_ptr<Model>modelPtr)
 		r1 = 1.f - r1;
 		r2 = 1.f - r2;
 	}
-	vec3 pos = modelPtr->vertices[indices[0]].pos;
-	float x = (1 - r1 - r2) * pos.x + r1 * pos.y + r2 * pos.z;
-	float y = (1 - r1 - r2) * pos.y + r1 * pos.y + r2 * pos.z;
-	float z = (1 - r1 - r2) * pos.z + r1 * pos.y + r2 * pos.z;
-	return vec3(x, y, z);
+	return vec3{ 1.f - r1 - r2, r1, r2 };
 }
 
 Model::Model(const std::string fileDir, const std::string fileName, vector<Light>& lights)

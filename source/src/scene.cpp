@@ -83,25 +83,31 @@ void Scene::render()
 	auto w = cam.filmPtr->width;
 	auto h = cam.filmPtr->height;
 	int ssp = 0;
-	vector<glm::ivec2> pixels;
-	for (int j = 0; j < h; j++)
-	{
-		for (int i = 0; i < w; i++)
-		{
-			pixels.push_back({ i, j });
-		}
-	}
 	auto start = std::chrono::high_resolution_clock::now();
 	while (++ssp < maxNumSample) {
 #pragma omp parallel for
-		for (int i = 0; i < pixels.size(); i++)
+		for (int j = 0; j < h; j++)
 		{
-			Ray ray = cam.genPrimaryRay({ pixels[i].x, pixels[i].y });
-			vec3 color = rayTracing(ray, 0);
-			cam.filmPtr->addToPixel(pixels[i].x, pixels[i].y, color);
+			for (int i = 0; i < w; i++)
+			{
+				Ray ray = cam.genPrimaryRay({ i, j });
+				PayLoad localPayload;
+				//bvhPtr->intersection(ray, modelPtr, localPayload);
+				vec3 color = rayTracing(ray, 0);
+				cam.filmPtr->addToPixel(i, j, color);
+			}
 		}
+		//for (int i = 0; i < pixels.size(); i++)
+		//{
+		//	Ray ray = cam.genPrimaryRay({ pixels[i].x, pixels[i].y });
+		//	PayLoad localPayload;
+		//	//bvhPtr->intersection(ray, modelPtr, localPayload);
 
-		if (ssp % 5 == 0) {
+		//	vec3 color = rayTracing(ray, 0);
+		//	cam.filmPtr->addToPixel(pixels[i].x, pixels[i].y, color);
+		//}
+
+		if (ssp % 1 == 0) {
 			auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 			cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
 			cam.filmPtr->saveToFile("../../output/image.ppm", ssp);
@@ -173,7 +179,8 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 
 	// 采样光源
 	float pdf_light = 1.f;
-	vec3 lightPos = sampleLight(modelPtr, lights, pdf_light);
+	int light_id = -1;
+	auto [lightPos, lightNormal] = sampleLight(modelPtr, lights, light_id, pdf_light);
 	vec3 ws = normalize(lightPos - payload.hitPos);
 	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
@@ -182,10 +189,10 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (isHit) {
 		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 		float lightDist = glm::length(payload.hitPos - lightPos);
-		if (hitDist - lightDist > -EPLISON) {
-			L_dir = lights[mat.lightId].radiance *
+		if (std::fabs(hitDist - lightDist) < EPLISON) {
+			L_dir = lights[light_id].radiance *
 				dot(ws, payload.normal) *
-				dot(-ws, lightPayload.normal) /
+				dot(-ws, lightNormal) /
 				static_cast<float>(std::pow(lightDist, 2)) /
 				pdf_light;
 		}
@@ -206,18 +213,24 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	return L_dir + L_indir;
 }
 
-vec3 Scene::sampleLight(const shared_ptr<Model>& modelPtr, const vector<Light>& lights, float& pdf_light) {
+std::tuple< vec3, vec3 > Scene::sampleLight(const shared_ptr<Model>& modelPtr, const vector<Light>& lights, int& light_id, float& pdf_light) {
 	// 随机选择光源
-	float light_id = genRandomFloat() * lights.size();
+	light_id = static_cast<int>(genRandomFloat() * lights.size());
 	Light light = lights[light_id];
 	pdf_light *= 1.f / lights.size();
 	// 在光源中选择一个mesh
 	float mesh_id = genRandomFloat() * light.meshPtrs.size();
 	shared_ptr<Mesh> meshPtr = light.meshPtrs[mesh_id];
 	pdf_light *= 1.f / light.area;
-	// 在mesh中选择一个点
-	vec3 point = meshPtr->sampleMesh(modelPtr);
-	return point;
+	// 在mesh上采样一个点
+	vec3 weights = meshPtr->sampleMesh(modelPtr);
+	vec3 lightPos = modelPtr->vertices[meshPtr->indices[0]].pos * weights.x +
+		modelPtr->vertices[meshPtr->indices[1]].pos * weights.y +
+		modelPtr->vertices[meshPtr->indices[2]].pos * weights.z;
+	vec3 lightNormal = modelPtr->vertices[meshPtr->indices[0]].normal * weights.x +
+		modelPtr->vertices[meshPtr->indices[1]].normal * weights.y +
+		modelPtr->vertices[meshPtr->indices[2]].normal * weights.z;
+	return { lightPos, lightNormal };
 }
 
 vec3 Scene::sampleHemisphere(const vec3& normal) {
