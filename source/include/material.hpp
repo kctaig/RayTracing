@@ -14,11 +14,11 @@ public:
 	vec3 sampleDir(const vec3 ray_in, const vec3 normal);
 
 	string matName;
-	vec3 diffuse;  // 漫反射颜色，不为0则表示有漫反射部分
-	vec3 specular;  // 镜面反射颜色，不为0则表示有镜面反射部分
-	vec3 transparency;  // 透明度，小于1表示透明材质
-	float shininess; // 高光指数，非零表示有高光效果
-	float refraIndex; // 折射率，不等1表示有折射效果
+	vec3 diffuse;  
+	vec3 specular;  
+	vec3 transparency;  
+	float shininess; 
+	float refraIndex; 
 
 	int lightId = -1;
 };

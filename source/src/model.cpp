@@ -114,7 +114,7 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 	for (int i = 0; i < shapes.size(); i++)
 	{
 		int mesh_vertex_offset = 0;								// 面片顶点偏移量
-		int mesh_num = shapes[i].mesh.num_face_vertices.size(); // 面片数量
+		int mesh_num = static_cast<int>(shapes[i].mesh.num_face_vertices.size()); // 面片数量
 		for (int m = 0; m < mesh_num; m++)
 		{
 			std::shared_ptr<Mesh> meshPtr = std::make_shared<Mesh>();
@@ -134,7 +134,7 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 					vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
 				}
 
-				// todo: 添加纹理坐标
+				// todo: add texture
 			}
 			// 每个面的包围盒
 			meshPtr->bboxPtr = std::make_shared<BBox>(vertices, meshPtr->indices);

@@ -10,7 +10,7 @@ Scene::Scene(const string sceneDir, const string fileName)
 {
 	using namespace tinyxml2;
 
-	// 加载 XML 文件
+	// loda xml file
 	const string xmlFile = sceneDir + "/" + fileName + ".xml";
 
 	XMLDocument doc;
@@ -20,7 +20,7 @@ Scene::Scene(const string sceneDir, const string fileName)
 		return;
 	}
 
-	// 读取摄像机数据
+	// read camera
 	XMLElement* cameraElement = doc.FirstChildElement("camera");
 	if (cameraElement)
 	{
@@ -28,21 +28,18 @@ Scene::Scene(const string sceneDir, const string fileName)
 		int height = cameraElement->IntAttribute("height");
 		float fovy = cameraElement->FloatAttribute("fovy");
 
-		// 读取 <eye> 元素
 		XMLElement* eyeElement = cameraElement->FirstChildElement("eye");
 		vec3 eye = vec3(
 			eyeElement->FloatAttribute("x"),
 			eyeElement->FloatAttribute("y"),
 			eyeElement->FloatAttribute("z"));
 
-		// 读取 <lookat> 元素
 		XMLElement* lookatElement = cameraElement->FirstChildElement("lookat");
 		vec3 lookat = vec3(
 			lookatElement->FloatAttribute("x"),
 			lookatElement->FloatAttribute("y"),
 			lookatElement->FloatAttribute("z"));
 
-		// 读取 <up> 元素
 		XMLElement* upElement = cameraElement->FirstChildElement("up");
 		vec3 up = vec3(
 			upElement->FloatAttribute("x"),
@@ -55,7 +52,7 @@ Scene::Scene(const string sceneDir, const string fileName)
 		this->cam = cam;
 	}
 
-	// 读取光照数据
+	// read light
 	for (XMLElement* lightElement = doc.FirstChildElement("light"); lightElement != nullptr; lightElement = lightElement->NextSiblingElement("light"))
 	{
 		Light lightData;
@@ -173,18 +170,17 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 
 	Material mat = modelPtr->modelMats[payload.matId];
 
-	// 与光源相交直接返回光源辐射度
 	if (mat.lightId >= 0)
 		return lights[mat.lightId].radiance;
 
-	// 采样光源
+	// sample light
 	float pdf_light = 1.f;
 	int light_id = -1;
 	auto [lightPos, lightNormal] = sampleLight(modelPtr, lights, light_id, pdf_light);
 	vec3 ws = normalize(lightPos - payload.hitPos);
 	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
-	// 判断是否遮挡
+	// judge if the light is visible
 	bool isHit = intersection(Ray(payload.hitPos, ws), modelPtr, lightPayload);
 	if (isHit) {
 		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
@@ -200,7 +196,7 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 
 	if (genRandomFloat() > rr) return L_dir;
 
-	// 次级光线
+	// secondary ray
 	vec3 wi_dir = mat.sampleDir(wo.getDir(), payload.normal);
 	vec3 brdf = mat.brdf(wo.getDir(), wi_dir, payload.normal);
 	float pdf_scatter = mat.pdf(wo.getDir(), wi_dir, payload.normal);
@@ -214,15 +210,15 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 }
 
 std::tuple< vec3, vec3 > Scene::sampleLight(const shared_ptr<Model>& modelPtr, const vector<Light>& lights, int& light_id, float& pdf_light) {
-	// 随机选择光源
+	// select a light
 	light_id = static_cast<int>(genRandomFloat() * lights.size());
 	Light light = lights[light_id];
 	pdf_light *= 1.f / lights.size();
-	// 在光源中选择一个mesh
-	float mesh_id = genRandomFloat() * light.meshPtrs.size();
+	// select a mesh
+	int mesh_id = static_cast<int>(genRandomFloat() * light.meshPtrs.size());
 	shared_ptr<Mesh> meshPtr = light.meshPtrs[mesh_id];
 	pdf_light *= 1.f / light.area;
-	// 在mesh上采样一个点
+	// sample a point on the light
 	vec3 weights = meshPtr->sampleMesh(modelPtr);
 	vec3 lightPos = modelPtr->vertices[meshPtr->indices[0]].pos * weights.x +
 		modelPtr->vertices[meshPtr->indices[1]].pos * weights.y +
@@ -235,9 +231,9 @@ std::tuple< vec3, vec3 > Scene::sampleLight(const shared_ptr<Model>& modelPtr, c
 
 vec3 Scene::sampleHemisphere(const vec3& normal) {
 	std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-	// 随机极坐标生成
+	// sample a direction in the hemisphere
 	float phi = genRandomFloat() * 2.0f * M_PI;
-	float cos_theta = sqrt(genRandomFloat()); // 余弦采样
+	float cos_theta = sqrt(genRandomFloat()); // cos(theta)
 	float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
 	vec3 up = (fabs(normal.z) < 0.999) ? vec3(0, 0, 1) : vec3(1, 0, 0);
 	vec3 tangent = normalize(cross(normal, up));

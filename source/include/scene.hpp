@@ -29,5 +29,5 @@ public:
 	int maxNumSample = 100;
 	int maxDepth = 1;
 	vector<Light> lights;
-	float rr = 0.7;
+	float rr = 0.7f;
 };
