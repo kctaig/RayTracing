@@ -94,12 +94,12 @@ void Scene::render()
 				cam.filmPtr->addToPixel(i, j, color);
 			}
 		}
+
 		//for (int i = 0; i < pixels.size(); i++)
 		//{
 		//	Ray ray = cam.genPrimaryRay({ pixels[i].x, pixels[i].y });
 		//	PayLoad localPayload;
 		//	//bvhPtr->intersection(ray, modelPtr, localPayload);
-
 		//	vec3 color = rayTracing(ray, 0);
 		//	cam.filmPtr->addToPixel(pixels[i].x, pixels[i].y, color);
 		//}
@@ -180,6 +180,7 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	vec3 ws = normalize(lightPos - payload.hitPos);
 	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
+
 	// judge if the light is visible
 	bool isHit = intersection(Ray(payload.hitPos, ws), modelPtr, lightPayload);
 	if (isHit) {
@@ -187,6 +188,7 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 		float lightDist = glm::length(payload.hitPos - lightPos);
 		if (std::fabs(hitDist - lightDist) < EPLISON) {
 			L_dir = lights[light_id].radiance *
+				mat.brdf(wo.getDir(), ws, payload.normal) *
 				dot(ws, payload.normal) *
 				dot(-ws, lightNormal) /
 				static_cast<float>(std::pow(lightDist, 2)) /
@@ -214,10 +216,12 @@ std::tuple< vec3, vec3 > Scene::sampleLight(const shared_ptr<Model>& modelPtr, c
 	light_id = static_cast<int>(genRandomFloat() * lights.size());
 	Light light = lights[light_id];
 	pdf_light *= 1.f / lights.size();
+
 	// select a mesh
 	int mesh_id = static_cast<int>(genRandomFloat() * light.meshPtrs.size());
 	shared_ptr<Mesh> meshPtr = light.meshPtrs[mesh_id];
 	pdf_light *= 1.f / light.area;
+
 	// sample a point on the light
 	vec3 weights = meshPtr->sampleMesh(modelPtr);
 	vec3 lightPos = modelPtr->vertices[meshPtr->indices[0]].pos * weights.x +

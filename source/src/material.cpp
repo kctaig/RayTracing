@@ -8,6 +8,8 @@ float Material::pdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
 
 vec3 Material::brdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
 {
+	//float cos_theta = dot(normal, ray_out);
+	//return diffuse * cos_theta / M_PI;
 	return diffuse / M_PI;
 }
 
@@ -25,4 +27,16 @@ vec3 Material::sampleDir(const vec3 ray_in, const vec3 normal)
 	tangent1 = normalize(cross(normal, arbitrary));
 	tangent2 = normalize(cross(normal, tangent1));
 	return local_dir.x * tangent1 + local_dir.y * tangent2 + local_dir.z * normal;
+
+	//std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+	//// sample a direction in the hemisphere
+	//float phi = genRandomFloat() * 2.0f * M_PI;
+	//float cos_theta = sqrt(genRandomFloat()); // cos(theta)
+	//float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
+	//vec3 up = (fabs(normal.z) < 0.999) ? vec3(0, 0, 1) : vec3(1, 0, 0);
+	//vec3 tangent = normalize(cross(normal, up));
+	//vec3 bitangent = cross(normal, tangent);
+	//vec3 sampleDir
+	//	= sin_theta * cos(phi) * tangent + sin_theta * sin(phi) * bitangent + cos_theta * normal;
+	//return normalize(sampleDir);
 }
