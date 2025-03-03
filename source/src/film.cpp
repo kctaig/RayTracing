@@ -21,11 +21,14 @@ void Film::saveToFile(const std::string fileName, int ssp)
 	}
 	outfile << "P6\n"
 		<< width << ' ' << height << "\n255\n";
+	const float gamma = 1.f / 2.2f;
 	for (int y = 0; y < height; y++)
 	{
 		for (int x = 0; x < width; x++)
 		{
 			glm::vec3& color = static_cast <float>(1.0) / static_cast<float>(ssp) * getPixel(x, y);
+			color = glm::clamp(color, 0.f, 1.f);
+			color = glm::pow(color, glm::vec3(gamma));
 			glm::ivec3 pixelColor = glm::clamp(color * 255.f, 0.f, 255.f);
 			outfile << static_cast<uint8_t>(pixelColor.x)
 				<< static_cast<uint8_t>(pixelColor.y)
