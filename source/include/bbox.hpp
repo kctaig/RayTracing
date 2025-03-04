@@ -14,8 +14,7 @@ public:
 		: min(min), max(max) {
 	}
 
-	BBox(const vector<Vertex>& vertices, const vector<int>& indices);
-
+	BBox(const vector<Vertex>& vertices);
 	BBox(const BBox& b1, const BBox& b2);
 
 	void unionMesh(const shared_ptr<Mesh> meshPtr);

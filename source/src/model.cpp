@@ -6,11 +6,11 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader/tiny_obj_loader.h"
 
-bool Mesh::intersection(const Ray& ray, PayLoad& payload, const shared_ptr<Model>modelPtr) const {
+bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 	bool isHit = false;
-	vec3 v0 = modelPtr->vertices[indices[0]].pos;
-	vec3 v1 = modelPtr->vertices[indices[1]].pos;
-	vec3 v2 = modelPtr->vertices[indices[2]].pos;
+	vec3 v0 = vertices[0].pos;
+	vec3 v1 = vertices[1].pos;
+	vec3 v2 = vertices[2].pos;
 	vec3 E1 = v1 - v0;
 	vec3 E2 = v2 - v0;
 	vec3 N = cross(E1, E2);
@@ -34,27 +34,17 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload, const shared_ptr<Model
 			payload.hitPos = ray.at(t);
 			payload.uv = { u, v };
 			vec3 normal =
-				modelPtr->vertices[indices[0]].normal * (1.f - u - v) +
-				modelPtr->vertices[indices[1]].normal * u +
-				modelPtr->vertices[indices[2]].normal * v;
+				vertices[0].normal * (1.f - u - v) +
+				vertices[1].normal * u +
+				vertices[2].normal * v;
 			payload.normal = normalize(normal);
-			payload.matId = matId;
+			payload.matPtr = matPtr;
 		}
 	}
 	return isHit;
 }
 
-vec3 Mesh::sampleMesh(const shared_ptr<Model>modelPtr)
-{
-	float r1 = genRandomFloat(), r2 = genRandomFloat();
-	if (r1 + r2 > 1.f) {
-		r1 = 1.f - r1;
-		r2 = 1.f - r2;
-	}
-	return vec3{ 1.f - r1 - r2, r1, r2 };
-}
-
-Model::Model(const std::string fileDir, const std::string fileName, vector<Light>& lights)
+void Model::loadFromFile(const string fileDir, const string fileName)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	tinyobj::ObjReaderConfig reader_config;
@@ -79,41 +69,32 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 	auto& shapes = reader.GetShapes();
 	auto& materials = reader.GetMaterials();
 
-	// 添加模型的顶点
-	for (size_t i = 0; i < attrib.vertices.size(); i += 3)
-	{
-		glm::vec3 v_pos = glm::vec3(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
-		vertices.push_back(Vertex(v_pos));
-	}
-
-	// 添加材质
-	modelMats.resize(materials.size());
+	matPtrs.resize(materials.size());
 	for (size_t i = 0; i < materials.size(); i++)
 	{
 		vec3 diffuse = vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]);
 		vec3 specular = vec3(materials[i].specular[0], materials[i].specular[1], materials[i].specular[2]);
 		vec3 transmittance = vec3(materials[i].transmittance[0], materials[i].transmittance[1], materials[i].transmittance[2]);
 
-		Material newMat = Material(materials[i].name,
+		shared_ptr<Material> newMat = std::make_shared<Material>(materials[i].name,
 			diffuse,
-			diffuse,
+			specular,
 			transmittance,
 			materials[i].shininess,
 			materials[i].ior);
 
-		// 光源材质id
-		for (int j = 0; j < lights.size(); j++)
+		// light material
+		for (int j = 0; j < lightPtrs.size(); j++)
 		{
-			if (lights[j].matName == newMat.matName)
+			if (lightPtrs[j]->getMatName() == newMat->matName)
 			{
-				newMat.lightId = j;
+				newMat->lightPtr = lightPtrs[j];
 				break;
 			}
 		}
-		modelMats[i] = newMat;
+		matPtrs[i] = newMat;
 	}
 
-	// 将模型数据保存到Model中
 	for (int i = 0; i < shapes.size(); i++)
 	{
 		int mesh_vertex_offset = 0;								// 面片顶点偏移量
@@ -122,71 +103,53 @@ Model::Model(const std::string fileDir, const std::string fileName, vector<Light
 		{
 			std::shared_ptr<Mesh> meshPtr = std::make_shared<Mesh>();
 			int each_mesh_vertex_num = shapes[i].mesh.num_face_vertices[m];
-			meshPtr->indices.resize(each_mesh_vertex_num);
+			meshPtr->vertices.resize(each_mesh_vertex_num);
 			tinyobj::index_t idx;
 			// 查看每个面片的顶点
 			for (int v = 0; v < each_mesh_vertex_num; v++)
 			{
 				idx = shapes[i].mesh.indices[mesh_vertex_offset + v];
-				meshPtr->indices[v] = idx.vertex_index; // 面片的的顶点索引
-				if (idx.normal_index >= 0 && idx.normal_index < this->vertices.size())
-				{
-					tinyobj::real_t nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
-					tinyobj::real_t ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
-					tinyobj::real_t nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
-					vertices[idx.normal_index].normal = glm::vec3(nx, ny, nz); // 添加法向量
-				}
+
+				// add vertex
+				tinyobj::real_t vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
+				tinyobj::real_t vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
+				tinyobj::real_t vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
+				meshPtr->vertices[v].pos = glm::vec3(vx, vy, vz);
+
+				// add normal
+				tinyobj::real_t nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
+				tinyobj::real_t ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
+				tinyobj::real_t nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
+				meshPtr->vertices[v].normal = glm::vec3(nx, ny, nz);
 
 				// todo: add texture
 			}
-			// 每个面的包围盒
-			meshPtr->bboxPtr = std::make_shared<BBox>(vertices, meshPtr->indices);
+			// bbox
+			meshPtr->bboxPtr = std::make_shared<BBox>(meshPtr->vertices);
+			// material
+			int matId = shapes[i].mesh.material_ids[m];
+			meshPtr->matPtr = matPtrs[matId];
 
-			// 每个面的材质id
-			meshPtr->matId = shapes[i].mesh.material_ids[m];
-			// 提取光源
-			int lightId = modelMats[meshPtr->matId].lightId;
-			if (lightId >= 0)
+			//提取光源
+			shared_ptr<Light>lightPtr = meshPtr->matPtr->lightPtr;
+			if (lightPtr != nullptr)
 			{
-				lights[lightId].meshPtrs.push_back(meshPtr);
+				lightPtr->getMeshPtrs().push_back(meshPtr);
 				// 计算光源的面积
-				vec3 v0 = vertices[meshPtr->indices[0]].pos;
-				vec3 v1 = vertices[meshPtr->indices[1]].pos;
-				vec3 v2 = vertices[meshPtr->indices[2]].pos;
+				vec3 v0 = meshPtr->vertices[0].pos;
+				vec3 v1 = meshPtr->vertices[1].pos;
+				vec3 v2 = meshPtr->vertices[2].pos;
 				vec3 E1 = v1 - v0;
 				vec3 E2 = v2 - v0;
-				lights[lightId].area += length(cross(E1, E2)) / 2.0f;
+				lightPtr->addArea(length(cross(E1, E2)) / 2.0f);
 			}
+
 			meshPtrs.push_back(meshPtr);
 			mesh_vertex_offset += each_mesh_vertex_num;
 		}
 	}
 	auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
-	modelInfo();
+	cout << "Vertices: " << attrib.vertices.size() << endl;
+	cout << "Faces: " << meshPtrs.size() << endl;
 	cout << "Model Build Time: " << duration.count() << " seconds" << endl;
-}
-
-void Model::modelInfo()
-{
-	// 调试信息
-	cout << "Number of Vertices  : " << vertices.size() << endl;
-	cout << "Number of Meshes   : " << meshPtrs.size() << endl;
-
-	//// 打印顶点
-	// cout << "start print vertices: \n";
-	// for (size_t j = 0; j < this->vertices.size(); j++)
-	//{
-	//     Vertex v = this->vertices[j];
-	//     cout << v.pos[0] << " " << v.pos[1] << " " << v.pos[2] << endl;
-	// }
-
-	// 打印mesh
-	/*cout << "start print meshes: \n";
-	for (size_t j = 0; j < this->triangles.size(); j++)
-	{
-		cout << "mesh " << j << " : ";
-		cout << this->triangles[j].indices[0] << " ";
-		cout << this->triangles[j].indices[1] << " ";
-		cout << this->triangles[j].indices[2] << endl;
-	}*/
 }

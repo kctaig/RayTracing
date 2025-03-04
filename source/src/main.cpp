@@ -5,13 +5,11 @@
 int main()
 {
 	const std::string sceneDir = "../../example-scenes-cg24";
-	//const std::string fileName = "cornell-box";
-	const std::string fileName = "veach-mis";
-	//const std::string fileName = "cornell-box";
+	const std::string fileName = "cornell-box";
+	//const std::string fileName = "veach-mis";
+	//const std::string fileName = "bathroom2";
 	Scene scene(sceneDir + "/" + fileName, fileName);
-	scene.cam.filmPtr->scale(0.5f);
-	shared_ptr<Model> modelPtr = std::make_shared<Model>(sceneDir + "/" + fileName, fileName, scene.lights);
-	scene.setModel(modelPtr);
+	//scene.getFilm()->scale(0.1f);
 	scene.BVHBuild();
 	scene.setMaxDepth(10);
 	scene.setNumSamples(100000);

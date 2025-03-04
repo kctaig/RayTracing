@@ -5,18 +5,17 @@
 class Film
 {
 public:
-	// 用于测试的分辨率
-	Film() {}
-
+	Film() = default;
 	Film(int w, int h) : width(w), height(h) { pixels.resize(w * h); }
+
 	void saveToFile(const std::string fileName, int cur_sample = 1);
 	void reset(int width, int height);
-	void  scale(float s);
+	void scale(float s);
 	vec3 getPixel(int x, int y) const { return pixels[y * width + x]; }
 	void addToPixel(int x, int y, const glm::vec3 color) { pixels[y * width + x] += color; }
 	void setPixel(int x, int y, const glm::vec3 color) { pixels[y * width + x] = color; }
 
-	int width, height;
+	int width{ 0 }, height{ 0 };
 
 private:
 	vector<vec3> pixels;

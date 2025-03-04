@@ -1,12 +1,11 @@
 #include "bbox.hpp"
 
-BBox::BBox(const vector<Vertex>& vertices, const vector<int>& indices) :BBox()
+BBox::BBox(const vector<Vertex>& vertices) :BBox()
 {
-	for (auto idx : indices)
+	for (const Vertex& v : vertices)
 	{
-		vec3 pos = vertices[idx].pos;
-		min = glm::min(min, pos);
-		max = glm::max(max, pos);
+		min = glm::min(min, v.pos);
+		max = glm::max(max, v.pos);
 	}
 }
 
@@ -38,5 +37,5 @@ bool BBox::intersection(const Ray& ray) const
 
 vec3 BBox::center()
 {
-	return vec3{ 0.5f * (min + max)};
+	return vec3{ 0.5f * (min + max) };
 }

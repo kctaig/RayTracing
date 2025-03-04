@@ -1,17 +1,18 @@
 #pragma once
 
 #include "head_include.hpp"
+#include "material.hpp"
 
 class PayLoad
 {
 public:
-	PayLoad() : matId(-1), hitPos(vec3(0)), normal(vec3(0)), uv(vec2(0)), t(FLT_MAX) {}
+	PayLoad() : hitPos(vec3(0)), normal(vec3(0)), uv(vec2(0)), t(FLT_MAX) {}
 
-	int matId;
+	float t;
 	vec3 hitPos;
 	vec3 normal;
 	vec2 uv;
-	float t;
+	shared_ptr<Material> matPtr;
 };
 
 class Ray

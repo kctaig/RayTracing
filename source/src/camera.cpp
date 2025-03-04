@@ -2,7 +2,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
-Ray Camera::genPrimaryRay(const ivec2& pixelCoord) const
+Ray Camera::rayCasting(const shared_ptr<Film>filmPtr, const ivec2& pixelCoord) const
 {
 	float width = static_cast<float>(filmPtr->width);
 	float height = static_cast<float>(filmPtr->height);
@@ -27,9 +27,9 @@ Ray Camera::genPrimaryRay(const ivec2& pixelCoord) const
 	float y = 1.0f - (2.0f * disturbed_y / float(height));
 
 	// 根据透视投影计算反向光线
-	glm::vec4 rayClip(x, y, -1.0f, 1.0f);
-	glm::vec4 rayEye = glm::inverse(projection) * rayClip;
-	rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+	vec4 rayClip(x, y, -1.0f, 1.0f);
+	vec4 rayEye = glm::inverse(projection) * rayClip;
+	rayEye = vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
 
 	// 转换到世界空间
 	vec3 rayDir = normalize(vec3(glm::inverse(view) * rayEye));

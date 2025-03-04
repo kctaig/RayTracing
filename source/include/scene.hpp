@@ -4,29 +4,40 @@
 #include "camera.hpp"
 #include "model.hpp"
 #include "bvh.hpp"
+#include "sampler.hpp"
 
 class Scene
 {
 public:
-	Scene() {}
-	Scene(const std::string fileDir, const std::string fileName);
-	void render();
+	Scene() = default;
+	~Scene() = default;
 
-	void setModel(shared_ptr<Model>m) { modelPtr = m; }
-	void BVHBuild();
+	Scene(const std::string fileDir, const std::string fileName);
+
+	// 未使用加速结构
+	//bool intersection(const Ray& ray, PayLoad& payload) const;
+	bool intersection(const Ray& ray, PayLoad& payload) const;
+	vec3 rayTracing(const Ray& ray, int depth);
+
+	shared_ptr<Camera> getCamera() { return camPtr; }
+	shared_ptr<Film> getFilm() { return filmPtr; }
+	shared_ptr<Model> getModel() { return modelPtr; }
+	shared_ptr<BVH> getBVH() { return bvhPtr; }
+
 	void setNumSamples(int n) { maxNumSample = n; }
 	void setMaxDepth(int n) { maxDepth = n; }
-	// 未使用加速结构
-	bool intersection(const Ray& ray, PayLoad& payload) const;
-	bool intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const;
-	vec3 rayTracing(const Ray& ray, int depth);
-	std::tuple< vec3, vec3 > sampleLight(const shared_ptr<Model>& modelPtr, const vector<Light>& lights, int& light_id, float& pdf_light);
+	void setModel(shared_ptr<Model>m) { modelPtr = m; }
+	void BVHBuild();
 
-	Camera cam;
+	shared_ptr<Sampler> sampleLight() const;
+	void render();
+
+private:
+	shared_ptr<Camera>camPtr;
+	shared_ptr<Film>filmPtr;
 	shared_ptr<Model> modelPtr;
 	shared_ptr<BVH>bvhPtr;
 	int maxNumSample = 100;
 	int maxDepth = 1;
-	vector<Light> lights;
 	float rr = 0.7f;
 };

@@ -8,6 +8,8 @@
 
 Scene::Scene(const string sceneDir, const string fileName)
 {
+	modelPtr = std::make_shared<Model>();
+
 	using namespace tinyxml2;
 
 	// loda xml file
@@ -46,68 +48,57 @@ Scene::Scene(const string sceneDir, const string fileName)
 			upElement->FloatAttribute("y"),
 			upElement->FloatAttribute("z"));
 
-		Film* filmPtr = new Film(width, height);
-		Camera cam(eye, lookat, up, fovy);
-		cam.filmPtr = filmPtr;
-		this->cam = cam;
+		filmPtr = std::make_shared<Film>(width, height);
+		camPtr = std::make_shared<Camera>(eye, lookat, up, fovy);
 	}
 
 	// read light
 	for (XMLElement* lightElement = doc.FirstChildElement("light"); lightElement != nullptr; lightElement = lightElement->NextSiblingElement("light"))
 	{
-		Light lightData;
+		shared_ptr<Light> lightPtr = std::make_shared<Light>();
 		const char* matName = lightElement->Attribute("mtlname");
 		if (matName)
 		{
-			lightData.matName = matName;
+			lightPtr->setMatName(matName);
 		}
 		const char* radiance = lightElement->Attribute("radiance");
 		if (radiance)
 		{
 			std::stringstream ss(radiance);
-			ss >> lightData.radiance.r;
+			vec3 radiance;
+			ss >> radiance.r;
 			ss.ignore(1, ',');
-			ss >> lightData.radiance.g;
+			ss >> radiance.g;
 			ss.ignore(1, ',');
-			ss >> lightData.radiance.b;
+			ss >> radiance.b;
+			lightPtr->setRadiance(radiance);
 		}
-		lights.push_back(lightData);
+		modelPtr->addLight(lightPtr);
 	}
+	modelPtr->loadFromFile(sceneDir, fileName);
 }
 
 void Scene::render()
 {
-	auto w = cam.filmPtr->width;
-	auto h = cam.filmPtr->height;
+	auto w = filmPtr->width;
+	auto h = filmPtr->height;
+	int numPixels = w * h;
 	int ssp = 0;
 	auto start = std::chrono::high_resolution_clock::now();
 	while (++ssp < maxNumSample) {
 #pragma omp parallel for
-		for (int j = 0; j < h; j++)
+		for (int i = 0; i < numPixels; i++)
 		{
-			for (int i = 0; i < w; i++)
-			{
-				Ray ray = cam.genPrimaryRay({ i, j });
-				PayLoad localPayload;
-				//bvhPtr->intersection(ray, modelPtr, localPayload);
-				vec3 color = rayTracing(ray, 0);
-				cam.filmPtr->addToPixel(i, j, color);
-			}
+			int x = i / w, y = i % w;
+			Ray ray = camPtr->rayCasting(filmPtr, { x, y });
+			vec3 color = rayTracing(ray, 0);
+			//bvhPtr->intersection(ray, PayLoad{});
+			filmPtr->addToPixel(x, y, color);
 		}
-
-		//for (int i = 0; i < pixels.size(); i++)
-		//{
-		//	Ray ray = cam.genPrimaryRay({ pixels[i].x, pixels[i].y });
-		//	PayLoad localPayload;
-		//	//bvhPtr->intersection(ray, modelPtr, localPayload);
-		//	vec3 color = rayTracing(ray, 0);
-		//	cam.filmPtr->addToPixel(pixels[i].x, pixels[i].y, color);
-		//}
-
 		if (ssp % 1 == 0) {
 			auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 			cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
-			cam.filmPtr->saveToFile("../../output/image.ppm", ssp);
+			filmPtr->saveToFile("../../output/image.ppm", ssp);
 		}
 	}
 }
@@ -115,95 +106,63 @@ void Scene::render()
 void Scene::BVHBuild()
 {
 	auto start = std::chrono::high_resolution_clock::now();
-	bvhPtr = std::make_shared<BVH>(*modelPtr, modelPtr->meshPtrs);
+	bvhPtr = std::make_shared<BVH>(modelPtr->getMeshPtrs());
 	auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 	cout << "BVH Build Time: " << duration.count() << " seconds" << endl;
 }
 
-bool Scene::intersection(const Ray& ray, PayLoad& payload) const
-{
-	bool inter = false;
-	for (auto meshPtr : modelPtr->meshPtrs)
-	{
-		vec3 v0 = modelPtr->vertices[meshPtr->indices[0]].pos;
-		vec3 v1 = modelPtr->vertices[meshPtr->indices[1]].pos;
-		vec3 v2 = modelPtr->vertices[meshPtr->indices[2]].pos;
-		vec3 E1 = v1 - v0;
-		vec3 E2 = v2 - v0;
-		vec3 N = cross(E1, E2);
-		if (dot(N, -ray.getDir()) < 0) continue;
-		vec3 T = ray.getOrigin() - v0;
-		vec3 D = normalize(ray.getDir());
-		vec3 P = cross(D, E2);
-		vec3 Q = cross(T, E1);
-		float p_e1 = dot(P, E1);
-		float t = dot(Q, E2) / p_e1;
-		float u = dot(P, T) / p_e1;
-		float v = dot(Q, D) / p_e1;
+//bool Scene::intersection(const Ray& ray, PayLoad& payload) const
+//{
+//	bool inter = false;
+//	for (std::shared_ptr<Mesh> mptr : modelPtr->getMeshPtrs())
+//	{
+//		if (mptr->intersection(ray, payload))
+//			inter = true;
+//	}
+//	return inter;
+//}
 
-		if (t >= 0.f && u >= 0 && v >= 0 && 1 - u - v >= 0)
-		{
-			if (t < payload.t)
-			{
-				inter = true;
-				payload.t = t;
-				payload.hitPos = ray.at(t);
-				payload.uv = { u, v };
-				vec3 normal = (
-					modelPtr->vertices[meshPtr->indices[0]].normal +
-					modelPtr->vertices[meshPtr->indices[1]].normal +
-					modelPtr->vertices[meshPtr->indices[2]].normal) / 3.0f;
-				payload.normal = normalize(normal);
-				payload.matId = meshPtr->matId;
-			}
-		}
-	}
-	return inter;
-}
-
-bool Scene::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload) const {
-	return bvhPtr->intersection(ray, modelPtr, payload);
+bool Scene::intersection(const Ray& ray, PayLoad& payload) const {
+	return bvhPtr->intersection(ray, payload);
 }
 
 vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (depth >= maxDepth) return vec3{ 0 };
 	PayLoad payload;
-	if (!intersection(wo, modelPtr, payload)) return vec3{ 0 };
+	if (!intersection(wo, payload)) return vec3{ 0 };
 
-	Material mat = modelPtr->modelMats[payload.matId];
-
-	if (mat.lightId >= 0)
-		return lights[mat.lightId].radiance;
+	shared_ptr<Material>matPtr = payload.matPtr;
+	if (payload.matPtr->lightPtr)
+		return matPtr->lightPtr->getRadiance();
 
 	// sample light
-	float pdf_light = 1.f;
-	int light_id = -1;
-	auto [lightPos, lightNormal] = sampleLight(modelPtr, lights, light_id, pdf_light);
+	shared_ptr<Sampler> samplerPtr = sampleLight();
+	vec3 lightPos = samplerPtr->getPos();
 	vec3 ws = normalize(lightPos - payload.hitPos);
 	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
 
 	// judge if the light is visible
-	bool isHit = intersection(Ray(payload.hitPos, ws), modelPtr, lightPayload);
+	bool isHit = intersection(Ray(payload.hitPos, ws), lightPayload);
 	if (isHit) {
 		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 		float lightDist = glm::length(payload.hitPos - lightPos);
 		if (std::fabs(hitDist - lightDist) < EPLISON) {
-			L_dir = lights[light_id].radiance *
-				mat.brdf(wo.getDir(), ws, payload.normal) *
+			L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
+				matPtr->brdf(wo.getDir(), ws, payload.normal) *
 				dot(ws, payload.normal) *
-				dot(-ws, lightNormal) /
+				dot(-ws, lightPayload.normal) /
 				static_cast<float>(std::pow(lightDist, 2)) /
-				pdf_light;
+				samplerPtr->getPdf();
 		}
 	}
 
 	if (genRandomFloat() > rr) return L_dir;
 
 	// secondary ray
-	vec3 wi_dir = mat.sampleDir(wo.getDir(), payload.normal);
-	vec3 brdf = mat.brdf(wo.getDir(), wi_dir, payload.normal);
-	float pdf_scatter = mat.pdf(wo.getDir(), wi_dir, payload.normal);
+	vec3 wi_dir = matPtr->sampleDir(wo.getDir(), payload.normal);
+	vec3 brdf = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
+	float pdf_scatter = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
 	Ray wi(payload.hitPos, wi_dir);
 	vec3 L_indir = rayTracing(wi, depth + 1) *
 		dot(wi_dir, payload.normal) *
@@ -213,24 +172,32 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	return L_dir + L_indir;
 }
 
-std::tuple< vec3, vec3 > Scene::sampleLight(const shared_ptr<Model>& modelPtr, const vector<Light>& lights, int& light_id, float& pdf_light) {
+shared_ptr<Sampler> Scene::sampleLight() const
+{
+	shared_ptr<Sampler> samplerPtr = std::make_shared<Sampler>();
+	vector<shared_ptr<Light>> lptrs = modelPtr->getLightPtrs();
 	// select a light
-	light_id = static_cast<int>(genRandomFloat() * lights.size());
-	Light light = lights[light_id];
-	pdf_light *= 1.f / lights.size();
+	int light_id = static_cast<int>(genRandomFloat() * lptrs.size());
+	shared_ptr<Light>lptr = lptrs[light_id];
+	float pdf_light = 1.f / lptrs.size();
 
 	// select a mesh
-	int mesh_id = static_cast<int>(genRandomFloat() * light.meshPtrs.size());
-	shared_ptr<Mesh> meshPtr = light.meshPtrs[mesh_id];
-	pdf_light *= 1.f / light.area;
+	int mesh_id = static_cast<int>(genRandomFloat() * lptr->getMeshPtrs().size());
+	shared_ptr<Mesh> meshPtr = lptr->getMeshPtrs()[mesh_id];
+	pdf_light *= 1.f / lptr->getArea();
 
 	// sample a point on the light
-	vec3 weights = meshPtr->sampleMesh(modelPtr);
-	vec3 lightPos = modelPtr->vertices[meshPtr->indices[0]].pos * weights.x +
-		modelPtr->vertices[meshPtr->indices[1]].pos * weights.y +
-		modelPtr->vertices[meshPtr->indices[2]].pos * weights.z;
-	vec3 lightNormal = modelPtr->vertices[meshPtr->indices[0]].normal * weights.x +
-		modelPtr->vertices[meshPtr->indices[1]].normal * weights.y +
-		modelPtr->vertices[meshPtr->indices[2]].normal * weights.z;
-	return { lightPos, lightNormal };
+	vec3 weights = samplerPtr->sampleWeight();
+	vec3 lightPos = meshPtr->vertices[0].pos * weights.x +
+		meshPtr->vertices[1].pos * weights.y +
+		meshPtr->vertices[2].pos * weights.z;
+	vec3 lightNormal = meshPtr->vertices[0].normal * weights.x +
+		meshPtr->vertices[1].normal * weights.y +
+		meshPtr->vertices[2].normal * weights.z;
+
+	samplerPtr->setPdf(pdf_light);
+	samplerPtr->setPos(lightPos);
+	samplerPtr->setMeshPtr(meshPtr);
+
+	return samplerPtr;
 }

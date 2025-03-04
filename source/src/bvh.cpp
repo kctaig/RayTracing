@@ -1,7 +1,7 @@
 #include "bvh.hpp"
 #include <stack>
 
-BVH::BVH(const Model& model, const vector<shared_ptr<Mesh>>& meshptrs)
+BVH::BVH(const vector<shared_ptr<Mesh>>& meshptrs)
 {
 	meshPtrs = meshptrs;
 	bboxPtr = std::make_shared<BBox>();
@@ -15,7 +15,21 @@ BVH::BVH(const Model& model, const vector<shared_ptr<Mesh>>& meshptrs)
 		right = nullptr;
 		return;
 	}
-	// 选择最长的轴
+	int axis = selectAxis();
+	auto compare = [axis](const std::shared_ptr<Mesh>& a, const std::shared_ptr<Mesh>& b) {
+		return a->bboxPtr->center()[axis] < b->bboxPtr->center()[axis];
+		};
+	std::sort(meshPtrs.begin(), meshPtrs.end(), compare);
+
+	vector <shared_ptr<Mesh>> leftMeshes(meshPtrs.begin(), meshPtrs.begin() + meshPtrs.size() / 2);
+	vector <shared_ptr<Mesh>> rightMeshes(meshPtrs.begin() + meshPtrs.size() / 2, meshPtrs.end());
+
+	left = std::make_shared<BVH>(leftMeshes);
+	right = std::make_shared<BVH>(rightMeshes);
+}
+
+int BVH::selectAxis()
+{
 	int axis = 0;
 	float max_length = bboxPtr->max.x - bboxPtr->min.x;
 	if (bboxPtr->max.y - bboxPtr->min.y > max_length)
@@ -23,57 +37,27 @@ BVH::BVH(const Model& model, const vector<shared_ptr<Mesh>>& meshptrs)
 		axis = 1;
 		max_length = bboxPtr->max.y - bboxPtr->min.y;
 	}
-	else if (bboxPtr->max.z - bboxPtr->min.z > max_length)
+	if (bboxPtr->max.z - bboxPtr->min.z > max_length)
 	{
 		axis = 2;
 		max_length = bboxPtr->max.z - bboxPtr->min.z;
 	}
-	// 排序 meshPtrs
-	switch (axis) {
-	case 0:
-		std::sort(meshPtrs.begin(), meshPtrs.end(), [](const std::shared_ptr<Mesh>& a, const std::shared_ptr<Mesh>& b) {
-			return a->bboxPtr->center().x < b->bboxPtr->center().x;
-			});
-		break;
-	case 1:
-		std::sort(meshPtrs.begin(), meshPtrs.end(), [](const std::shared_ptr<Mesh>& a, const std::shared_ptr<Mesh>& b) {
-			return a->bboxPtr->center().y < b->bboxPtr->center().y;
-			});
-		break;
-	case 2:
-		std::sort(meshPtrs.begin(), meshPtrs.end(), [](const std::shared_ptr<Mesh>& a, const std::shared_ptr<Mesh>& b) {
-			return a->bboxPtr->center().z < b->bboxPtr->center().z;
-			});
-		break;
-	}
-
-	// 选择中位数
-	vector <shared_ptr<Mesh>> leftMeshes(meshPtrs.begin(), meshPtrs.begin() + meshPtrs.size() / 2);
-	vector <shared_ptr<Mesh>> rightMeshes(meshPtrs.begin() + meshPtrs.size() / 2, meshPtrs.end());
-
-	left = std::make_shared<BVH>(model, leftMeshes);
-	right = std::make_shared<BVH>(model, rightMeshes);
+	return axis;
 }
 
-bool BVH::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad& payload)
+bool BVH::intersection(const Ray& ray, PayLoad& payload)
 {
-	//// 与该节点的包围盒不相交
+	//float recT = payload.t;
+	////与该节点的包围盒不相交
 	//if (!bboxPtr->intersection(ray)) return false;
-	//bool inter = false, leftInter = false, rightInter = false;
-	//if (left) leftInter = left->intersection(ray, modelPtr, payload);
-	//if (right) rightInter = right->intersection(ray, modelPtr, payload);
-	//if (!left && !right) {
-	//	PayLoad tempPayload;
+	//else {
+	//	if (left) left->intersection(ray, payload);
+	//	if (right) right->intersection(ray, payload);
 	//	for (auto& meshptr : meshPtrs) {
-	//		bool isHit = meshptr->intersection(ray, tempPayload, modelPtr);
-	//		if (isHit && tempPayload.t < payload.t) {
-	//			inter = true;
-	//			payload = tempPayload;
-	//		}
+	//		meshptr->intersection(ray, payload);
 	//	}
 	//}
-	//inter = inter || leftInter || rightInter;
-	//return inter;
+	//return payload.t != recT;
 
 	std::stack<BVH*> stack;
 	stack.push(this);
@@ -86,7 +70,7 @@ bool BVH::intersection(const Ray& ray, const shared_ptr<Model> modelPtr, PayLoad
 		if (!current->left && !current->right) {
 			// 叶子节点：检查所有网格
 			for (auto& meshptr : current->meshPtrs) {
-				if (meshptr->intersection(ray, payload, modelPtr))
+				if (meshptr->intersection(ray, payload))
 					isHit = true;
 			}
 		}
