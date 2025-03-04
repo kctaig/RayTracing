@@ -130,6 +130,8 @@ bool Scene::intersection(const Ray& ray, PayLoad& payload) const
 		vec3 v2 = modelPtr->vertices[meshPtr->indices[2]].pos;
 		vec3 E1 = v1 - v0;
 		vec3 E2 = v2 - v0;
+		vec3 N = cross(E1, E2);
+		if (dot(N, -ray.getDir()) < 0) continue;
 		vec3 T = ray.getOrigin() - v0;
 		vec3 D = normalize(ray.getDir());
 		vec3 P = cross(D, E2);
@@ -231,18 +233,4 @@ std::tuple< vec3, vec3 > Scene::sampleLight(const shared_ptr<Model>& modelPtr, c
 		modelPtr->vertices[meshPtr->indices[1]].normal * weights.y +
 		modelPtr->vertices[meshPtr->indices[2]].normal * weights.z;
 	return { lightPos, lightNormal };
-}
-
-vec3 Scene::sampleHemisphere(const vec3& normal) {
-	std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-	// sample a direction in the hemisphere
-	float phi = genRandomFloat() * 2.0f * M_PI;
-	float cos_theta = sqrt(genRandomFloat()); // cos(theta)
-	float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
-	vec3 up = (fabs(normal.z) < 0.999) ? vec3(0, 0, 1) : vec3(1, 0, 0);
-	vec3 tangent = normalize(cross(normal, up));
-	vec3 bitangent = cross(normal, tangent);
-	vec3 sampleDir
-		= sin_theta * cos(phi) * tangent + sin_theta * sin(phi) * bitangent + cos_theta * normal;
-	return normalize(sampleDir);
 }
