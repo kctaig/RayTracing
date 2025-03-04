@@ -11,6 +11,13 @@ void Film::reset(int width, int height)
 	this->pixels.resize(width * height);
 }
 
+void Film::scale(float s)
+{
+	width *= s;
+	height *= s;
+	pixels.resize(width * height);
+}
+
 void Film::saveToFile(const std::string fileName, int ssp)
 {
 	// 输出 二进制 文件
