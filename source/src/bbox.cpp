@@ -1,18 +1,14 @@
 #include "bbox.hpp"
 
-BBox::BBox(const vector<Vertex>& vertices) :BBox()
+BBox::BBox(const vector<Vertex>& vertices)
 {
+	min = glm::vec3(FLT_MAX);
+	max = glm::vec3(-FLT_MAX);	
 	for (const Vertex& v : vertices)
 	{
 		min = glm::min(min, v.pos);
 		max = glm::max(max, v.pos);
 	}
-}
-
-BBox::BBox(const BBox& b1, const BBox& b2)
-{
-	min = glm::min(b1.min, b2.min);
-	max = glm::max(b1.max, b2.max);
 }
 
 void BBox::unionMesh(const shared_ptr<Mesh> meshPtr)

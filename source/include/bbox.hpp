@@ -10,12 +10,7 @@ public:
 		max = glm::vec3(-FLT_MAX);
 	}
 
-	BBox(glm::vec3 min, glm::vec3 max)
-		: min(min), max(max) {
-	}
-
 	BBox(const vector<Vertex>& vertices);
-	BBox(const BBox& b1, const BBox& b2);
 
 	void unionMesh(const shared_ptr<Mesh> meshPtr);
 
@@ -23,6 +18,10 @@ public:
 
 	vec3 center();
 
+	vec3 getMin() { return min; }	
+	vec3 getMax() { return max; }
+
+private:
 	vec3 min;
 	vec3 max;
 };
