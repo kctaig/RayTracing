@@ -18,8 +18,8 @@ public:
 
 	vec3 center();
 
-	vec3 getMin() { return min; }	
-	vec3 getMax() { return max; }
+	vec3 getMin() const { return min; }
+	vec3 getMax() const { return max; }
 
 private:
 	vec3 min;

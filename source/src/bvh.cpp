@@ -28,7 +28,7 @@ BVH::BVH(const vector<shared_ptr<Mesh>>& meshptrs)
 	right = std::make_shared<BVH>(rightMeshes);
 }
 
-int BVH::selectAxis()
+int BVH::selectAxis() const 
 {
 	int axis = 0;
 	float max_length = bboxPtr->getMax().x - bboxPtr->getMin().x;

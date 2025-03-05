@@ -9,6 +9,7 @@
 Scene::Scene(const string sceneDir, const string fileName)
 {
 	modelPtr = std::make_shared<Model>();
+	this->fileName = fileName;
 
 	using namespace tinyxml2;
 
@@ -98,7 +99,9 @@ void Scene::render()
 		if (ssp % 1 == 0) {
 			auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 			cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
-			filmPtr->saveToFile("../../output/image.ppm", ssp);
+		}
+		if (ssp % 100 == 0) {
+			filmPtr->saveToFile(this->fileName, ssp);
 		}
 	}
 }

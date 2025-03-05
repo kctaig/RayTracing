@@ -33,6 +33,7 @@ public:
 	void render();
 
 private:
+	string fileName;
 	shared_ptr<Camera>camPtr;
 	shared_ptr<Film>filmPtr;
 	shared_ptr<Model> modelPtr;

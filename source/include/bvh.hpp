@@ -14,8 +14,10 @@ public:
 	}
 
 	BVH(const vector<shared_ptr<Mesh>>& meshPtrs);
-	int selectAxis();
+	int selectAxis() const ;
 	bool intersection(const Ray& ray, PayLoad& payload);
+
+private:
 	int numMesh = 5;
 	shared_ptr<BBox> bboxPtr;
 	vector<std::shared_ptr<Mesh>> meshPtrs;

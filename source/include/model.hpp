@@ -26,7 +26,6 @@ struct Mesh
 	vector<Vertex> vertices;
 	shared_ptr<BBox> bboxPtr;
 	shared_ptr<Material> matPtr;
-	//shared_ptr<Light> lightPtr;
 };
 
 class Model

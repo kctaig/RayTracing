@@ -1,27 +1,32 @@
-#include "film.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include "film.hpp"
 
 void Film::reset(int width, int height)
 {
 	this->width = width;
 	this->height = height;
-	this->pixels.resize(width * height);
+	this->pixels.resize(static_cast<size_t>(width * height));
 }
 
 void Film::scale(float s)
 {
-	width *= s;
-	height *= s;
-	pixels.resize(width * height);
+	width = static_cast<int>(static_cast<float>(width) * s);
+	height = static_cast<int>(static_cast<float>(height) * s);
+	pixels.resize(static_cast<size_t> (width * height));
 }
 
-void Film::saveToFile(const std::string fileName, int ssp)
+void Film::saveToFile(const std::string fileName, int ssp) const
 {
-	// 输出 二进制 文件
-	std::ofstream outfile(fileName, std::ios::binary);
+	string dir = "../../output/" + fileName + "/";
+	if (!std::filesystem::exists(dir))
+	{
+		std::filesystem::create_directory(dir);
+	}
+	string filePath = dir + fileName + "_" + std::to_string(ssp) + ".ppm";
+	std::ofstream outfile(filePath, std::ios::binary);
 	if (!outfile)
 	{
 		std::cout << "can not open file: " << fileName << std::endl;

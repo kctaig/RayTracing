@@ -8,12 +8,13 @@ public:
 	Film() = default;
 	Film(int w, int h) : width(w), height(h) { pixels.resize(w * h); }
 
-	void saveToFile(const std::string fileName, int cur_sample = 1);
+	void saveToFile(const std::string fileName, int cur_sample = 1) const;
 	void reset(int width, int height);
 	void scale(float s);
-	vec3 getPixel(int x, int y) const { return pixels[y * width + x]; }
-	void addToPixel(int x, int y, const glm::vec3 color) { pixels[y * width + x] += color; }
-	void setPixel(int x, int y, const glm::vec3 color) { pixels[y * width + x] = color; }
+	size_t index(int x, int y) const { return static_cast<size_t>(y * width + x); }
+	vec3 getPixel(int x, int y) const { return pixels[index(x,y)]; }
+	void addToPixel(int x, int y, const glm::vec3 color) { pixels[index(x, y)] += color; }
+	void setPixel(int x, int y, const glm::vec3 color) { pixels[index(x, y)] = color; }
 
 	int width{ 0 }, height{ 0 };
 
