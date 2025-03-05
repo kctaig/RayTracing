@@ -5,10 +5,7 @@
 
 class BBox {
 public:
-	BBox() {
-		min = glm::vec3(FLT_MAX);
-		max = glm::vec3(-FLT_MAX);
-	}
+	BBox():min(vec3(FLT_MAX)),max(vec3(-FLT_MAX)) {}
 
 	BBox(const vector<Vertex>& vertices);
 
@@ -16,7 +13,7 @@ public:
 
 	bool intersection(const Ray& ray) const;
 
-	vec3 center();
+	vec3 center() const;
 
 	vec3 getMin() const { return min; }
 	vec3 getMax() const { return max; }
