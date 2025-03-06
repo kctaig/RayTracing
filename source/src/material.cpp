@@ -9,8 +9,8 @@ float Material::pdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
 vec3 Material::brdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
 {
 	float cos_theta = std::max(0.f, dot(normal, ray_out));
-	return diffuse * cos_theta / M_PI;
-	//return diffuse / M_PI;
+	//return diffuse * cos_theta / M_PI;
+	return diffuse / M_PI;
 }
 
 vec3 Material::sampleDir(const vec3 ray_in, const vec3 normal)

@@ -14,8 +14,7 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 	vec3 E1 = v1 - v0;
 	vec3 E2 = v2 - v0;
 	vec3 N = cross(E1, E2);
-	// 如果是背面
-	if (dot(N, -ray.getDir()) < 0.f) return isHit;
+	if (dot(N, -ray.getDir()) < EPLISON) return isHit;
 	vec3 T = ray.getOrigin() - v0;
 	vec3 D = normalize(ray.getDir());
 	vec3 P = cross(D, E2);

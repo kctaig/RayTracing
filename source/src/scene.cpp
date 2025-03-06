@@ -141,20 +141,19 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	// sample light
 	shared_ptr<Sampler> samplerPtr = sampleLight();
 	vec3 lightPos = samplerPtr->getPos();
-	vec3 ws = normalize(lightPos - payload.hitPos);
+	vec3 ws_dir = normalize(lightPos - payload.hitPos);
 	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
-
 	// judge if the light is visible
-	bool isHit = intersection(Ray(payload.hitPos, ws), lightPayload);
+	bool isHit = intersection(Ray(payload.hitPos, ws_dir), lightPayload);
 	if (isHit) {
 		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 		float lightDist = glm::length(payload.hitPos - lightPos);
-		if (std::fabs(hitDist - lightDist) < EPLISON) {
+		if (hitDist - lightDist > -EPLISON) {
 			L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
-				matPtr->brdf(wo.getDir(), ws, payload.normal) *
-				dot(ws, payload.normal) *
-				dot(-ws, lightPayload.normal) /
+				matPtr->brdf(wo.getDir(), ws_dir, payload.normal) *
+				dot(ws_dir, payload.normal) *
+				dot(-ws_dir, lightPayload.normal) /
 				static_cast<float>(std::pow(lightDist, 2)) /
 				samplerPtr->getPdf();
 		}
