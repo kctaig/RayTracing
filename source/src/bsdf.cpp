@@ -1,32 +1,38 @@
 #include "bsdf.hpp"
 
-float LambertianBRDF::pdf() const
+float LambertianBRDF::pdf(const vec3& wi, const vec3& n) const
 {
-	return 0.5f / M_PI;
+	float cos_theta = std::max(EPSILON, dot(n, wi));
+	return cos_theta / M_PI;
 }
 
 vec3 LambertianBRDF::f(const vec3& wo, const vec3& wi, const vec3& n) const
 {
+	float cos_theta1 = dot(wo, n);
+	float cos_theta2 = dot(wi, n);
+	if (cos_theta1 > 0.f || cos_theta2 < 0.f) return vec3(0);
 	return radiance / M_PI;
 }
 
 vec3 LambertianBRDF::sampleDir(const vec3& wi, const vec3& n) const
 {
-	float x_1 = genRandomFloat();
-	float x_2 = genRandomFloat();
-	float z = std::fabs(1.0f - 2.0f * x_1);
-	float r = std::sqrt(1.0f - z * z);
-	float phi = 2 * M_PI * x_2;
-	vec3 local_dir(r * std::cos(phi), r * std::sin(phi), z);
-	vec3 tangent1, tangent2;
-	// 选择一个与 N 不平行的向量，这里使用 (1, 0, 0)，假设 N 不与 (1, 0, 0) 重合
-	vec3 arbitrary = fabs(n.x > 0.99f) ? vec3(0, 1, 0) : vec3(1, 0, 0);
-	tangent1 = normalize(cross(n, arbitrary));
-	tangent2 = normalize(cross(n, tangent1));
-	return local_dir.x * tangent1 + local_dir.y * tangent2 + local_dir.z * n;
+	 // 在单位圆盘上生成随机点
+	float u = genRandomFloat(); // 随机数 [0, 1)
+	float v = genRandomFloat(); // 随机数 [0, 1)
+	// 将随机点映射到半球上（余弦加权采样）
+	float phi = 2.0f * M_PI * u;
+	float cosTheta = sqrt(v);
+	float sinTheta = sqrt(1.0f - v);	
+	// 生成局部坐标系中的方向
+	vec3 localDir = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+	// 将局部方向转换到世界坐标系
+	vec3 arbitrary = (std::abs(n.x) > 0.9f ? vec3(0, 1, 0) : vec3(1, 0, 0));
+	vec3 tangent = normalize(cross(n, arbitrary));
+	vec3 bitangent = cross(n, tangent);
+	return localDir.x * tangent + localDir.y * bitangent + localDir.z * n;
 }
 
-float SpecularBRDF::pdf() const
+float SpecularBRDF::pdf(const vec3& wi, const vec3& n) const
 {
 	return 0.0f;
 }
@@ -62,14 +68,11 @@ void BSDF::sampleBSDF(const vec3& wo_dir, const vec3& n)
 	int bxdf_id = static_cast<int>(genRandomFloat() * bxdfPtrs.size());
 	wi_dir = bxdfPtrs[bxdf_id]->sampleDir(wo_dir, n);
 	f = bxdfPtrs[bxdf_id]->f(wo_dir, wi_dir, n);
-	f *= bxdfPtrs[bxdf_id]->getWeight();
-	pdf = bxdfPtrs[bxdf_id]->pdf();
+	pdf = bxdfPtrs[bxdf_id]->pdf(wi_dir, n) * bxdfPtrs[bxdf_id]->getWeight();
 	// add other contributation
 	for (int i = 0; i < bxdfPtrs.size(); i++) {
 		if (i == bxdf_id) continue;
-		vec3 f_i = bxdfPtrs[i]->f(wo_dir, wi_dir, n);
-		float pdf_i = bxdfPtrs[i]->pdf();
-		f += f_i * bxdfPtrs[i]->getWeight();
-		pdf += pdf_i * bxdfPtrs[i]->getWeight();
+		f += bxdfPtrs[i]->f(wo_dir, wi_dir, n);
+		pdf += bxdfPtrs[i]->pdf(wi_dir, n) * bxdfPtrs[i]->getWeight();
 	}
 }

@@ -12,7 +12,7 @@ enum BxDFType {
 class BxDF {
 public:
 	BxDF(const vec3& r, const BxDFType& t) : radiance(r), type(t), weight(1.0f) {};
-	virtual float pdf() const = 0;
+	virtual float pdf(const vec3 &wi, const vec3& n) const = 0;
 	virtual vec3 f(const vec3& wo, const vec3& wi, const vec3& n) const = 0;
 	virtual vec3 sampleDir(const vec3& wi, const vec3& n) const = 0;
 	vec3 getRadiance()const { return radiance; }
@@ -26,15 +26,19 @@ protected:
 };
 
 class LambertianBRDF : public BxDF {
+
+public:
 	LambertianBRDF(const vec3& kd) :BxDF(kd, BSDF_DIFFUSE) {}
-	virtual float pdf() const override;
+	virtual float pdf(const vec3& wi, const vec3& n) const override;
 	virtual vec3 f(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 sampleDir(const vec3& wi, const vec3& n) const override;
 };
 
 class SpecularBRDF :public BxDF {
+
+public:
 	SpecularBRDF(const vec3& ks, float ns) : BxDF(ks, BSDF_SPECULAR), shininess(ns) {}
-	virtual float pdf() const override;
+	virtual float pdf(const vec3& wi, const vec3& n) const override;
 	virtual vec3 f(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 sampleDir(const vec3& wi, const vec3& n) const override;
 private:

@@ -19,6 +19,8 @@ public:
 	bool intersection(const Ray& ray, PayLoad& payload) const;
 	vec3 rayTracing(const Ray& ray, int depth);
 
+	vec3 rayTest(const Ray& ray) const;
+
 	shared_ptr<Camera> getCamera() { return camPtr; }
 	shared_ptr<Film> getFilm() { return filmPtr; }
 	shared_ptr<Model> getModel() { return modelPtr; }
@@ -39,6 +41,6 @@ private:
 	shared_ptr<Model> modelPtr;
 	shared_ptr<BVH>bvhPtr;
 	int maxNumSample = 100;
-	int maxDepth = 1;
+	int maxDepth = 5;
 	float rr = 0.7f;
 };

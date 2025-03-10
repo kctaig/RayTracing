@@ -9,7 +9,7 @@ int main()
 	//const std::string fileName = "veach-mis";
 	//const std::string fileName = "bathroom2";
 	Scene scene(sceneDir + "/" + fileName, fileName);
-	scene.getFilm()->scale(0.5f);
+	//scene.getFilm()->scale(0.5f);
 	scene.BVHBuild();
 	scene.setMaxDepth(10);
 	scene.setNumSamples(100000);

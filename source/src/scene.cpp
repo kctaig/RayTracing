@@ -92,6 +92,7 @@ void Scene::render()
 		{
 			int x = i / w, y = i % w;
 			Ray ray = camPtr->rayCasting(filmPtr, { x, y });
+			//vec3 color = rayTest(ray);
 			vec3 color = rayTracing(ray, 0);
 			//bvhPtr->intersection(ray, PayLoad{});
 			filmPtr->addToPixel(x, y, color);
@@ -138,6 +139,9 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (payload.matPtr->lightPtr)
 		return matPtr->lightPtr->getRadiance();
 
+	payload.initBSDF();
+	payload.bsdfPtr->sampleBSDF(wo.getDir(), payload.normal);
+
 	// sample light
 	shared_ptr<Sampler> samplerPtr = sampleLight();
 	vec3 lightPos = samplerPtr->getPos();
@@ -149,9 +153,10 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (isHit) {
 		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 		float lightDist = glm::length(payload.hitPos - lightPos);
-		if (hitDist - lightDist > -EPLISON) {
+		if (fabs(hitDist - lightDist) < EPSILON) {
 			L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
-				matPtr->brdf(wo.getDir(), ws_dir, payload.normal) *
+				//matPtr->brdf(wo.getDir(), ws_dir, payload.normal) *
+				payload.bsdfPtr->f *
 				dot(ws_dir, payload.normal) *
 				dot(-ws_dir, lightPayload.normal) /
 				static_cast<float>(std::pow(lightDist, 2)) /
@@ -161,24 +166,33 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	// Russian Roulette
 	if (genRandomFloat() > rr) return L_dir;
 
-	payload.initBSDF();
-	payload.bsdfPtr->sampleBSDF(wo.getDir(), payload.normal);
 	// secondary ray
 	//vec3 wi_dir = matPtr->sampleDir(wo.getDir(), payload.normal);
-	//vec3 brdf = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
-	//float pdf_scatter = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
+	//vec3 f = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
+	//float pdf = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
 
 	vec3 wi_dir = payload.bsdfPtr->wi_dir;
 	vec3 f = payload.bsdfPtr->f;
 	float pdf = payload.bsdfPtr->pdf;
 
-	Ray wi(payload.hitPos, wi_dir);
-	vec3 L_indir = rayTracing(wi, depth + 1) *
+	vec3 L_indir = rayTracing(Ray(payload.hitPos,wi_dir), depth + 1) *
 		dot(wi_dir, payload.normal) *
 		f /
 		pdf /
 		rr;
 	return L_dir + L_indir;
+}
+
+vec3 Scene::rayTest(const Ray& ray) const
+{
+	PayLoad payload;
+	if (!intersection(ray, payload)) return vec3{ 0 };
+
+	shared_ptr<Material>matPtr = payload.matPtr;
+	if (payload.matPtr->lightPtr)
+		return matPtr->lightPtr->getRadiance();
+	float cos_theta = std::max(0.f, -dot(payload.normal, ray.getDir()));
+	return cos_theta * matPtr->diffuse;
 }
 
 shared_ptr<Sampler> Scene::sampleLight() const

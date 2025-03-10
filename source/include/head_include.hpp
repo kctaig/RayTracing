@@ -24,7 +24,7 @@ using std::shared_ptr;
 using std::make_shared;
 
 #define M_PI 3.1415926f
-#define EPLISON 1e-8f
+constexpr auto EPSILON = 1e-6f;
 
 static float genRandomFloat(float rangeL = 0.0f, float rangeR = 1.0f) {
 	static std::random_device rd;
