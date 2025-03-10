@@ -158,18 +158,25 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 				samplerPtr->getPdf();
 		}
 	}
-
+	// Russian Roulette
 	if (genRandomFloat() > rr) return L_dir;
 
+	payload.initBSDF();
+	payload.bsdfPtr->sampleBSDF(wo.getDir(), payload.normal);
 	// secondary ray
-	vec3 wi_dir = matPtr->sampleDir(wo.getDir(), payload.normal);
-	vec3 brdf = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
-	float pdf_scatter = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
+	//vec3 wi_dir = matPtr->sampleDir(wo.getDir(), payload.normal);
+	//vec3 brdf = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
+	//float pdf_scatter = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
+
+	vec3 wi_dir = payload.bsdfPtr->wi_dir;
+	vec3 f = payload.bsdfPtr->f;
+	float pdf = payload.bsdfPtr->pdf;
+
 	Ray wi(payload.hitPos, wi_dir);
 	vec3 L_indir = rayTracing(wi, depth + 1) *
 		dot(wi_dir, payload.normal) *
-		brdf /
-		pdf_scatter /
+		f /
+		pdf /
 		rr;
 	return L_dir + L_indir;
 }

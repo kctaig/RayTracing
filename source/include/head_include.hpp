@@ -21,6 +21,7 @@ using std::endl;
 using std::vector;
 using std::string;
 using std::shared_ptr;
+using std::make_shared;
 
 #define M_PI 3.1415926f
 #define EPLISON 1e-8f
