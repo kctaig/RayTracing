@@ -149,29 +149,28 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
 	// judge if the light is visible
-	bool isHit = intersection(Ray(payload.hitPos, ws_dir), lightPayload);
-	if (isHit) {
-		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
-		float lightDist = glm::length(payload.hitPos - lightPos);
-		if (hitDist - lightDist > -EPSILON) {
-			L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
-				payload.bsdfPtr->eval *
-				dot(ws_dir, payload.normal) *
-				dot(-ws_dir, lightPayload.normal) /
-				static_cast<float>(std::pow(lightDist, 2)) /
-				samplerPtr->getPdf();
-		}
-	}
+	 bool isHit = intersection(Ray(payload.hitPos, ws_dir), lightPayload);
+	 if (isHit) {
+	 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
+	 	float lightDist = glm::length(payload.hitPos - lightPos);
+	 	if (hitDist - lightDist > -EPSILON) {
+	 		L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
+	 			payload.bsdfPtr->eval *
+	 			dot(ws_dir, payload.normal) *
+	 			dot(-ws_dir, lightPayload.normal) /
+	 			static_cast<float>(std::pow(lightDist, 2)) /
+	 			samplerPtr->getPdf();
+	 	}
+	 }
 	// Russian Roulette
 	if (genRandomFloat() > rr) return L_dir;
 
 	// secondary ray
 	//vec3 wi_dir = matPtr->sampleDir(wo.getDir(), payload.normal);
-	//vec3 f = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
+	//vec3 eval = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
 	//float pdf = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
 
 	vec3 wi_dir = payload.bsdfPtr->wi_dir;
-	if (glm::length(wi_dir) < EPSILON) return L_dir;
 	vec3 eval = payload.bsdfPtr->eval;
 	float pdf = payload.bsdfPtr->pdf;
 

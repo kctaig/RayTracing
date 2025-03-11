@@ -34,8 +34,17 @@ static float genRandomFloat(float rangeL = 0.0f, float rangeR = 1.0f) {
 }
 
 static vec3 toWorld(const vec3& localDir, const vec3& n) {
-	vec3 arbitrary = (std::abs(n.x) > 0.9f ? vec3(0, 1, 0) : vec3(1, 0, 0));
+	vec3 arbitrary;
+	if (std::abs(n.x) > std::abs(n.y) && std::abs(n.x) > std::abs(n.z)) {
+		arbitrary = vec3(0, 1, 0);
+	}
+	else if (std::abs(n.y) > std::abs(n.z)) {
+		arbitrary = vec3(0, 0, 1);
+	}
+	else {
+		arbitrary = vec3(1, 0, 0);
+	}
 	vec3 tangent = normalize(cross(n, arbitrary));
-	vec3 bitangent = cross(n, tangent);
+	vec3 bitangent = normalize(cross(n, tangent));
 	return localDir.x * tangent + localDir.y * bitangent + localDir.z * n;
 }
