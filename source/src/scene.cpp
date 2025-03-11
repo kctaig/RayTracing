@@ -150,7 +150,7 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (isHit) {
 		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 		float lightDist = glm::length(payload.hitPos - lightPos);
-		if (std::fabs(hitDist - lightDist) < EPLISON) {
+		if (std::fabs(hitDist - lightDist) < EPSILON) {
 			L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
 				matPtr->brdf(wo.getDir(), ws, payload.normal) *
 				dot(ws, payload.normal) *
