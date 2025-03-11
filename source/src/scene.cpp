@@ -90,14 +90,14 @@ void Scene::render()
 #pragma omp parallel for
 		for (int i = 0; i < numPixels; i++)
 		{
-			int x = i / w, y = i % w;
+			int y = i / w, x = i % w;
 			Ray ray = camPtr->rayCasting(filmPtr, { x, y });
 			//vec3 color = rayTest(ray);
-			vec3 color = rayTracing(ray, 0);
 			//bvhPtr->intersection(ray, PayLoad{});
+			vec3 color = rayTracing(ray, 0);
 			filmPtr->addToPixel(x, y, color);
 		}
-		if (ssp % 1 == 0) {
+		if (ssp % 10 == 0) {
 			auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 			cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
 		}
@@ -153,10 +153,9 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	if (isHit) {
 		float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 		float lightDist = glm::length(payload.hitPos - lightPos);
-		if (fabs(hitDist - lightDist) < EPSILON) {
+		if (hitDist - lightDist > -EPSILON) {
 			L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
-				//matPtr->brdf(wo.getDir(), ws_dir, payload.normal) *
-				payload.bsdfPtr->f *
+				payload.bsdfPtr->eval *
 				dot(ws_dir, payload.normal) *
 				dot(-ws_dir, lightPayload.normal) /
 				static_cast<float>(std::pow(lightDist, 2)) /
@@ -173,12 +172,12 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 
 	vec3 wi_dir = payload.bsdfPtr->wi_dir;
 	if (glm::length(wi_dir) < EPSILON) return L_dir;
-	vec3 f = payload.bsdfPtr->f;
+	vec3 eval = payload.bsdfPtr->eval;
 	float pdf = payload.bsdfPtr->pdf;
 
-	vec3 L_indir = rayTracing(Ray(payload.hitPos,wi_dir), depth + 1) *
+	vec3 L_indir = rayTracing(Ray(payload.hitPos, wi_dir), depth + 1) *
 		dot(wi_dir, payload.normal) *
-		f /
+		eval /
 		pdf /
 		rr;
 	return L_dir + L_indir;
