@@ -172,6 +172,7 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	//float pdf = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
 
 	vec3 wi_dir = payload.bsdfPtr->wi_dir;
+	if (glm::length(wi_dir) < EPSILON) return L_dir;
 	vec3 f = payload.bsdfPtr->f;
 	float pdf = payload.bsdfPtr->pdf;
 

@@ -8,9 +8,9 @@ float LambertianBRDF::pdf(const vec3& wi, const vec3& n) const
 
 vec3 LambertianBRDF::f(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	float cos_theta1 = dot(wo, n);
-	float cos_theta2 = dot(wi, n);
-	if (cos_theta1 > 0.f || cos_theta2 < 0.f) return vec3(0);
+	//float cos_theta1 = dot(wo, n);
+	//float cos_theta2 = dot(wi, n);
+	//if (cos_theta1 > 0.f || cos_theta2 < 0.f) return vec3(0);
 	return radiance / M_PI;
 }
 
