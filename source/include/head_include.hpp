@@ -48,3 +48,9 @@ static vec3 toWorld(const vec3& localDir, const vec3& n) {
 	vec3 bitangent = normalize(cross(n, tangent));
 	return localDir.x * tangent + localDir.y * bitangent + localDir.z * n;
 }
+
+static float power_heuristic(float pdf1, float pdf2)
+{
+	float  sum = pdf1 * pdf1 + pdf2 * pdf2;
+	return sum == 0.f ? 0.f : pdf1 * pdf1 / sum;
+}

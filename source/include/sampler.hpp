@@ -5,22 +5,25 @@
 
 class Sampler {
 public:
-	Sampler() : pdf(0), pos(0) {}
+	Sampler() : pdf(0), dir(0) {}
 
-	Sampler(float p, vec3 pos, shared_ptr<Mesh> m) : pdf(p), pos(pos), meshPtr(m) {}
+	Sampler(float p, vec3 pos, shared_ptr<Mesh> m) : pdf(p), dir(pos), meshPtr(m) {}
 
 	vec3 sampleWeight() const;
 
 	void setPdf(float p) { pdf = p; }
-	void setPos(vec3 p) { pos = p; }
+	void setPos(vec3 p) { dir = p; }
 	void setMeshPtr(shared_ptr<Mesh> m) { meshPtr = m; }
+	void setPayloadPtr(shared_ptr<PayLoad> p) { payloadPtr = p; }
 
 	float getPdf() const { return pdf; }
-	vec3 getPos() const { return pos; }
+	vec3 getDir() const { return dir; }
 	shared_ptr<Mesh> getMeshPtr() const { return meshPtr; }
-
+	shared_ptr<PayLoad>getPayloadPtr() const { return payloadPtr; }
+	
 private:
 	float pdf;
-	vec3 pos;
+	vec3 dir;
+	shared_ptr<PayLoad>payloadPtr;
 	shared_ptr<Mesh>meshPtr;
 };

@@ -15,7 +15,7 @@ public:
 	Scene(const std::string fileDir, const std::string fileName);
 
 	// 未使用加速结构
-	//bool intersection(const Ray& ray, PayLoad& payload) const;
+	bool iterIntersection(const Ray& ray, PayLoad& payload) const;
 	bool intersection(const Ray& ray, PayLoad& payload) const;
 	vec3 rayTracing(const Ray& ray, int depth);
 
@@ -31,7 +31,7 @@ public:
 	void setModel(shared_ptr<Model>m) { modelPtr = m; }
 	void BVHBuild();
 
-	shared_ptr<Sampler> sampleLight() const;
+	shared_ptr<Sampler> sampleLight(const PayLoad& payload) const;
 	void render();
 
 private:

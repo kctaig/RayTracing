@@ -115,16 +115,16 @@ void Scene::BVHBuild()
 	cout << "BVH Build Time: " << duration.count() << " seconds" << endl;
 }
 
-//bool Scene::intersection(const Ray& ray, PayLoad& payload) const
-//{
-//	bool inter = false;
-//	for (std::shared_ptr<Mesh> mptr : modelPtr->getMeshPtrs())
-//	{
-//		if (mptr->intersection(ray, payload))
-//			inter = true;
-//	}
-//	return inter;
-//}
+bool Scene::iterIntersection(const Ray& ray, PayLoad& payload) const
+{
+	bool inter = false;
+	for (std::shared_ptr<Mesh> mptr : modelPtr->getMeshPtrs())
+	{
+		if (mptr->intersection(ray, payload))
+			inter = true;
+	}
+	return inter;
+}
 
 bool Scene::intersection(const Ray& ray, PayLoad& payload) const {
 	return bvhPtr->intersection(ray, payload);
@@ -140,45 +140,40 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 		return matPtr->lightPtr->getRadiance();
 
 	payload.initBSDF();
+	// sample BSDF
 	payload.bsdfPtr->sampleBSDF(wo.getDir(), payload.normal);
-
 	// sample light
 	vec3 L_dir = vec3(0);
-	//shared_ptr<Sampler> samplerPtr = sampleLight();
-	//vec3 lightPos = samplerPtr->getPos();
-	//vec3 ws_dir = normalize(lightPos - payload.hitPos);
-	//PayLoad lightPayload;
-	//// judge if the light is visible
-	// bool isHit = intersection(Ray(payload.hitPos, ws_dir), lightPayload);
-	// if (isHit) {
-	// 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
-	// 	float lightDist = glm::length(payload.hitPos - lightPos);
-	//	if (fabs(hitDist - lightDist) < EPSILON) {
-	// 		L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
-	// 			payload.bsdfPtr->eval *
-	//			// 采样的方向与法向量的夹角必须小于 90 度
-	// 			std::max(0.f,dot(ws_dir, payload.normal))*
-	//			std::max(0.f, dot(-ws_dir, lightPayload.normal)) / 
-	// 			static_cast<float>(std::pow(lightDist, 2)) /
-	// 			samplerPtr->getPdf();
-	// 	}
-	// }
+	shared_ptr<Sampler> samplerPtr = sampleLight(payload);
+	if (samplerPtr) {
+		float lightWeight = power_heuristic(samplerPtr->getPdf(), payload.bsdfPtr->pdf);
+		L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
+			// 这里的 eval 以及 pdf 应该与ws_dir有关
+							payload.bsdfPtr->eval *
+							lightWeight *
+							dot(samplerPtr->getDir(), payload.normal) /
+							samplerPtr->getPdf();
+
+		//L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
+		//		payload.bsdfPtr->eval *
+		//		dot(samplerPtr->getDir(), payload.normal) /
+		//		samplerPtr->getPdf();
+	}
+
 	// Russian Roulette
 	if (genRandomFloat() > rr) return L_dir;
 
-	// secondary ray
-	//vec3 wi_dir = matPtr->sampleDir(wo.getDir(), payload.normal);
-	//vec3 eval = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
-	//float pdf = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
-	
+	// scatter ray
 	vec3 wi_dir = payload.bsdfPtr->wi_dir;
+	if (dot(wi_dir, payload.normal) < 0) return L_dir;
 	vec3 eval = payload.bsdfPtr->eval;
-	float pdf = payload.bsdfPtr->pdf;
-	if (pdf == 0.f) return L_dir;
+	float scatPdf = payload.bsdfPtr->pdf;
+	float scatWeight = power_heuristic(scatPdf, samplerPtr ? samplerPtr->getPdf():0.f);
 	vec3 L_indir = rayTracing(Ray(payload.hitPos, wi_dir), depth + 1) *
+		scatWeight *
 		dot(wi_dir, payload.normal) *
 		eval /
-		pdf /
+		scatPdf /
 		rr;
 	return L_dir + L_indir;
 }
@@ -195,7 +190,7 @@ vec3 Scene::rayTest(const Ray& ray) const
 	return cos_theta * matPtr->diffuse;
 }
 
-shared_ptr<Sampler> Scene::sampleLight() const
+shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 {
 	shared_ptr<Sampler> samplerPtr = std::make_shared<Sampler>();
 	vector<shared_ptr<Light>> lptrs = modelPtr->getLightPtrs();
@@ -218,14 +213,25 @@ shared_ptr<Sampler> Scene::sampleLight() const
 	vec3 lightPos = meshPtr->vertices[0].pos * weights.x +
 		meshPtr->vertices[1].pos * weights.y +
 		meshPtr->vertices[2].pos * weights.z;
-	vec3 lightNormal = meshPtr->vertices[0].normal * weights.x +
-		meshPtr->vertices[1].normal * weights.y +
-		meshPtr->vertices[2].normal * weights.z;
 
-	float pdf_light = 1.0f / areaPreSum.back();
-	samplerPtr->setPdf(pdf_light);
-	samplerPtr->setPos(lightPos);
+	vec3 ws_dir = normalize(lightPos - payload.hitPos);
+	// back face
+	if (dot(ws_dir, payload.normal) < 0) return nullptr;
+	PayLoad lightPayload;
+	// judget the light point is visible
+	bool isHit = intersection(Ray(payload.hitPos, ws_dir), lightPayload);
+	if (!isHit) return nullptr;
+	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
+	float lightDist = glm::length(payload.hitPos - lightPos);
+	if (fabs(hitDist - lightDist) > EPSILON) return nullptr;
+
+	float lightPdf = static_cast<float>(std::pow(lightDist, 2)) /
+		dot(-ws_dir, lightPayload.normal) /
+		areaPreSum.back();
+
+	samplerPtr->setPdf(lightPdf);
+	samplerPtr->setPos(ws_dir);
 	samplerPtr->setMeshPtr(meshPtr);
-
+	samplerPtr->setPayloadPtr(std::make_shared<PayLoad>(lightPayload));
 	return samplerPtr;
 }
