@@ -153,7 +153,7 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	 if (isHit) {
 	 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 	 	float lightDist = glm::length(payload.hitPos - lightPos);
-	 	if (hitDist - lightDist > -EPSILON) {
+		if (fabs(hitDist - lightDist) < EPSILON) {
 	 		L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
 	 			payload.bsdfPtr->eval *
 				// 采样的方向与法向量的夹角必须小于 90 度
@@ -202,15 +202,19 @@ shared_ptr<Sampler> Scene::sampleLight() const
 	shared_ptr<Sampler> samplerPtr = std::make_shared<Sampler>();
 	vector<shared_ptr<Light>> lptrs = modelPtr->getLightPtrs();
 	// select a light
-	int light_id = static_cast<int>(genRandomFloat() * lptrs.size());
-	shared_ptr<Light>lptr = lptrs[light_id];
-	float pdf_light = 1.f / lptrs.size();
-
-	// select a mesh
-	int mesh_id = static_cast<int>(genRandomFloat() * lptr->getMeshPtrs().size());
+	vector<float>areaPreSum(lptrs.size());
+	for (int i = 0; i < lptrs.size(); i++)
+	{
+		areaPreSum[i] = lptrs[i]->getArea();
+		if (i > 0) areaPreSum[i] += areaPreSum[i - 1];
+	}
+	float randomValue = genRandomFloat() * areaPreSum.back();
+	int light_id = 0;
+	while (light_id < lptrs.size() && randomValue > areaPreSum[light_id]) light_id++;
+	shared_ptr<Light> lptr = lptrs[light_id];
+	// select a point on the light
+	int mesh_id = genRandomFloat() * lptr->getMeshPtrs().size();
 	shared_ptr<Mesh> meshPtr = lptr->getMeshPtrs()[mesh_id];
-	pdf_light *= 1.f / lptr->getArea();
-
 	// sample a point on the light
 	vec3 weights = samplerPtr->sampleWeight();
 	vec3 lightPos = meshPtr->vertices[0].pos * weights.x +
@@ -220,6 +224,7 @@ shared_ptr<Sampler> Scene::sampleLight() const
 		meshPtr->vertices[1].normal * weights.y +
 		meshPtr->vertices[2].normal * weights.z;
 
+	float pdf_light = 1.0f / areaPreSum.back();
 	samplerPtr->setPdf(pdf_light);
 	samplerPtr->setPos(lightPos);
 	samplerPtr->setMeshPtr(meshPtr);
