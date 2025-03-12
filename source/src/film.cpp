@@ -40,8 +40,9 @@ void Film::saveToFile(const std::string fileName, int ssp) const
 		{
 			glm::vec3& color = static_cast <float>(1.0) / static_cast<float>(ssp) * getPixel(x, y);
 			// 如果颜色出现负值，说明计算有误
-			//if (color.x < 0.f || color.y<0.f || color.z <0.f) color = vec3(0,0,1);
+			//if (color.x < 0.f || color.y<0.f || color.z <0.f) color = vec3(0,1,0);
 			//if (color.x > 1.f || color.y > 1.f || color.z > 1.f) color = vec3(1, 0, 0);
+			//if (color.x != color.x || color.y != color.y || color.z != color.z) color = vec3(0, 1, 0);
 			color = glm::clamp(color, 0.f, 1.f);
 			color = glm::pow(color, glm::vec3(gamma));
 			glm::ivec3 pixelColor = glm::clamp(color * 255.f, 0.f, 255.f);

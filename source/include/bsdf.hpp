@@ -39,7 +39,6 @@ public:
 	virtual float pdf(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 sampleDir(const vec3& wo, const vec3& n) const override;
-	vec3 reflect(const vec3& wo, const vec3& n) const;
 private:
 	float alpha;
 };

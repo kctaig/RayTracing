@@ -143,27 +143,26 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	payload.bsdfPtr->sampleBSDF(wo.getDir(), payload.normal);
 
 	// sample light
-	shared_ptr<Sampler> samplerPtr = sampleLight();
-	vec3 lightPos = samplerPtr->getPos();
-	vec3 ws_dir = normalize(lightPos - payload.hitPos);
-	PayLoad lightPayload;
 	vec3 L_dir = vec3(0);
-	// judge if the light is visible
-	 bool isHit = intersection(Ray(payload.hitPos, ws_dir), lightPayload);
-	 if (isHit) {
-	 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
-	 	float lightDist = glm::length(payload.hitPos - lightPos);
-		if (fabs(hitDist - lightDist) < EPSILON) {
-	 		L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
-	 			payload.bsdfPtr->eval *
-				// 采样的方向与法向量的夹角必须小于 90 度
-	 			std::max(0.f,dot(ws_dir, payload.normal))*
-				std::max(0.f, dot(-ws_dir, lightPayload.normal)) / 
-	 			static_cast<float>(std::pow(lightDist, 2)) /
-	 			samplerPtr->getPdf();
-			//assert(L_dir.x >= 0 && L_dir.y >= 0 && L_dir.z >= 0);
-	 	}
-	 }
+	//shared_ptr<Sampler> samplerPtr = sampleLight();
+	//vec3 lightPos = samplerPtr->getPos();
+	//vec3 ws_dir = normalize(lightPos - payload.hitPos);
+	//PayLoad lightPayload;
+	//// judge if the light is visible
+	// bool isHit = intersection(Ray(payload.hitPos, ws_dir), lightPayload);
+	// if (isHit) {
+	// 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
+	// 	float lightDist = glm::length(payload.hitPos - lightPos);
+	//	if (fabs(hitDist - lightDist) < EPSILON) {
+	// 		L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
+	// 			payload.bsdfPtr->eval *
+	//			// 采样的方向与法向量的夹角必须小于 90 度
+	// 			std::max(0.f,dot(ws_dir, payload.normal))*
+	//			std::max(0.f, dot(-ws_dir, lightPayload.normal)) / 
+	// 			static_cast<float>(std::pow(lightDist, 2)) /
+	// 			samplerPtr->getPdf();
+	// 	}
+	// }
 	// Russian Roulette
 	if (genRandomFloat() > rr) return L_dir;
 
@@ -171,17 +170,16 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	//vec3 wi_dir = matPtr->sampleDir(wo.getDir(), payload.normal);
 	//vec3 eval = matPtr->brdf(wo.getDir(), wi_dir, payload.normal);
 	//float pdf = matPtr->pdf(wo.getDir(), wi_dir, payload.normal);
-
+	
 	vec3 wi_dir = payload.bsdfPtr->wi_dir;
 	vec3 eval = payload.bsdfPtr->eval;
 	float pdf = payload.bsdfPtr->pdf;
-
+	if (pdf == 0.f) return L_dir;
 	vec3 L_indir = rayTracing(Ray(payload.hitPos, wi_dir), depth + 1) *
 		dot(wi_dir, payload.normal) *
 		eval /
 		pdf /
 		rr;
-	//assert(L_indir.x >= 0 && L_indir.y >= 0 && L_indir.z >= 0);
 	return L_dir + L_indir;
 }
 

@@ -39,7 +39,7 @@ inline void PayLoad::initBSDF()
 	float shininess = matPtr->shininess;
 
 	// add LambertianBRDF and SpecularBRDF
-	bsdfPtr->bxdfPtrs.push_back(make_shared<LambertianBRDF>(diffuse));
+	bsdfPtr->bxdfPtrs.push_back(make_shared<LambertianBRDF>(vec3(diffuse)));
 	if (glm::length(specular) > EPSILON)
 	{
 		bsdfPtr->bxdfPtrs.push_back(make_shared<SpecularBRDF>(specular, shininess));
