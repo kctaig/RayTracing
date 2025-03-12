@@ -101,7 +101,7 @@ void Scene::render()
 			auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 			cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
 		}
-		if (ssp % 100 == 0) {
+		if (ssp % 50 == 0) {
 			filmPtr->saveToFile(this->fileName, ssp);
 		}
 	}
@@ -156,10 +156,12 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	 	if (hitDist - lightDist > -EPSILON) {
 	 		L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
 	 			payload.bsdfPtr->eval *
-	 			dot(ws_dir, payload.normal) *
-	 			dot(-ws_dir, lightPayload.normal) /
+				// 采样的方向与法向量的夹角必须小于 90 度
+	 			std::max(0.f,dot(ws_dir, payload.normal))*
+				std::max(0.f, dot(-ws_dir, lightPayload.normal)) / 
 	 			static_cast<float>(std::pow(lightDist, 2)) /
 	 			samplerPtr->getPdf();
+			//assert(L_dir.x >= 0 && L_dir.y >= 0 && L_dir.z >= 0);
 	 	}
 	 }
 	// Russian Roulette
@@ -179,6 +181,7 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 		eval /
 		pdf /
 		rr;
+	//assert(L_indir.x >= 0 && L_indir.y >= 0 && L_indir.z >= 0);
 	return L_dir + L_indir;
 }
 
