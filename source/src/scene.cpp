@@ -163,9 +163,9 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	// sample BSDF
 	payload.bsdfPtr->sampleBSDF(wo.getDir(), payload.normal);
 	float scatPdf = payload.bsdfPtr->pdf;
-	if (scatPdf < 0.f) return L_dir;
+	if (scatPdf < EPSILON) return L_dir;
 	vec3 wi_dir = payload.bsdfPtr->wi_dir;
-	if (dot(wi_dir, payload.normal) < 0.f) return L_dir;
+	if (dot(wi_dir, payload.normal) < EPSILON) return L_dir;
 	vec3 BSDFeval = payload.bsdfPtr->BSDFeval;
 	float scatWeight = powerHeuristic(scatPdf, samplerPtr ? samplerPtr->getPdf() : 0.f);
 	vec3 L_indir = rayTracing(Ray(payload.hitPos, wi_dir), depth + 1) *
