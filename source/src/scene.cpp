@@ -138,13 +138,13 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 	payload.initBSDF();
 
 	shared_ptr<Material>matPtr = payload.matPtr;
-	if (payload.matPtr->lightPtr)
+	if (depth == 0 && payload.matPtr->lightPtr)
 		return matPtr->lightPtr->getRadiance();
 	// sample light
 	vec3 L_dir = vec3(0);
 	shared_ptr<Sampler> samplerPtr = sampleLight(payload);
 	if (samplerPtr) {
-		float lightWeight = power_heuristic(samplerPtr->getPdf(), payload.bsdfPtr->pdf);
+		float lightWeight = powerHeuristic(samplerPtr->getPdf(), payload.bsdfPtr->pdf);
 		L_dir = samplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance() *
 			payload.bsdfPtr->eval(wo.getDir(), samplerPtr->getDir(), payload.normal) *
 			lightWeight *
@@ -162,16 +162,16 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 
 	// sample BSDF
 	payload.bsdfPtr->sampleBSDF(wo.getDir(), payload.normal);
-	if (payload.bsdfPtr->pdf < EPSILON) return L_dir;
-	vec3 wi_dir = payload.bsdfPtr->wi_dir;
-	if (dot(wi_dir, payload.normal) < EPSILON) return L_dir;
-	vec3 eval = payload.bsdfPtr->BSDFeval;
 	float scatPdf = payload.bsdfPtr->pdf;
-	float scatWeight = power_heuristic(scatPdf, samplerPtr ? samplerPtr->getPdf() : 0.f);
+	if (scatPdf < 0.f) return L_dir;
+	vec3 wi_dir = payload.bsdfPtr->wi_dir;
+	if (dot(wi_dir, payload.normal) < 0.f) return L_dir;
+	vec3 BSDFeval = payload.bsdfPtr->BSDFeval;
+	float scatWeight = powerHeuristic(scatPdf, samplerPtr ? samplerPtr->getPdf() : 0.f);
 	vec3 L_indir = rayTracing(Ray(payload.hitPos, wi_dir), depth + 1) *
 		scatWeight *
 		dot(wi_dir, payload.normal) *
-		eval /
+		BSDFeval /
 		scatPdf /
 		rr;
 	return L_dir + L_indir;
