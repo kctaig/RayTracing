@@ -47,9 +47,9 @@ class BSDF {
 public:
 	void generateWeight();
 	void sampleBSDF(const vec3& wo, const vec3& n);
-
+	vec3 eval(const vec3& wo, const vec3& wi, const vec3& n);
 	float pdf;
-	vec3 eval;
+	vec3 BSDFeval;
 	vec3 wi_dir;
 	vector<shared_ptr<BxDF>> bxdfPtrs;
 };

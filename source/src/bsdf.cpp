@@ -57,7 +57,7 @@ vec3 SpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
 
 	h = toWorld(h, n);
 
-	vec3 wi = wo - 2.0f * dot(wo,h) * h;
+	vec3 wi = wo - 2.0f * dot(wo, h) * h;
 
 	return wi;
 }
@@ -92,12 +92,21 @@ void BSDF::sampleBSDF(const vec3& wo_dir, const vec3& n)
 		bxdf_index++;
 	}
 	wi_dir = bxdfPtrs[bxdf_index]->sampleDir(wo_dir, n);
-	eval = bxdfPtrs[bxdf_index]->eval(wo_dir, wi_dir, n);
+	BSDFeval = bxdfPtrs[bxdf_index]->eval(wo_dir, wi_dir, n);
 	pdf = bxdfPtrs[bxdf_index]->pdf(wo_dir, wi_dir, n) * bxdfPtrs[bxdf_index]->getWeight();
 	// add other contributation
 	for (int i = 0; i < bxdfPtrs.size(); i++) {
 		if (i == bxdf_index) continue;
-		eval += bxdfPtrs[i]->eval(wo_dir, wi_dir, n);
+		BSDFeval += bxdfPtrs[i]->eval(wo_dir, wi_dir, n);
 		pdf += bxdfPtrs[i]->pdf(wo_dir, wi_dir, n) * bxdfPtrs[i]->getWeight();
 	}
+}
+
+vec3 BSDF::eval(const vec3& wo, const vec3& wi, const vec3& n)
+{
+	vec3 res = vec3(0);
+	for (shared_ptr<BxDF> bxdfPtr : bxdfPtrs) {
+		res += bxdfPtr->eval(wo, wi, n);
+	}
+	return res;
 }
