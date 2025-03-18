@@ -8,7 +8,7 @@ class PayLoad
 {
 public:
 	PayLoad() : hitPos(vec3(0)), normal(vec3(0)), uv(vec2(0)), t(FLT_MAX) {}
-	void initBSDF();
+	void initBxDFs();
 	float t;
 	vec3 hitPos;
 	vec3 normal;
@@ -31,7 +31,7 @@ private:
 	vec3 dir;
 };
 
-inline void PayLoad::initBSDF()
+inline void PayLoad::initBxDFs()
 {
 	bsdfPtr = make_shared<BSDF>();
 	vec3 diffuse = matPtr->diffuse;

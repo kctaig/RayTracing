@@ -52,14 +52,12 @@ bool BVH::intersection(const Ray& ray, PayLoad& payload)
 	bool isHit = false;
 
 	if (!left && !right) {
-		// 叶子节点：检查所有网格
 		for (auto& meshptr : meshPtrs) {
 			if (meshptr->intersection(ray, payload))
 				isHit = true;
 		}
 	}
 	else {
-		// 递归检查左右子树
 		if (left && left->intersection(ray, payload))
 			isHit = true;
 		if (right && right->intersection(ray, payload))

@@ -42,5 +42,5 @@ private:
 	shared_ptr<BVH>bvhPtr;
 	int maxNumSample = 100;
 	int maxDepth = 5;
-	float rr = 0.7f;
+	float rrThreshold = 0.7f;
 };
