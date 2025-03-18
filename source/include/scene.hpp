@@ -17,7 +17,7 @@ public:
 	// 未使用加速结构
 	bool iterIntersection(const Ray& ray, PayLoad& payload) const;
 	bool intersection(const Ray& ray, PayLoad& payload) const;
-	vec3 rayTracing(const Ray& ray, int depth);
+	vec3 rayTracing(const Ray& ray, PayLoad& currentPayload, int depth);
 
 	vec3 rayTest(const Ray& ray) const;
 

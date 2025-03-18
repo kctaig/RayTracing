@@ -94,7 +94,7 @@ void Scene::render()
 			Ray ray = camPtr->rayCasting(filmPtr, { x, y });
 			// vec3 color = rayTest(ray);
 			// bvhPtr->intersection(ray, PayLoad{});
-			vec3 color = rayTracing(ray, 0);
+			vec3 color = rayTracing(ray, PayLoad{}, 0);
 			filmPtr->addToPixel(x, y, color);
 		}
 		if (ssp % 10 == 0) {
@@ -130,15 +130,14 @@ bool Scene::intersection(const Ray& ray, PayLoad& payload) const {
 	return bvhPtr->intersection(ray, payload);
 }
 
-vec3 Scene::rayTracing(const Ray& wo, int depth) {
+vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 	if (depth >= maxDepth) return vec3(0);
-	PayLoad currentPayload;
-	if (!intersection(wo, currentPayload)) return vec3(0);
+
+	if (depth == 0 && !intersection(wo, currentPayload)) return vec3(0);
 
 	shared_ptr<Material>matPtr = currentPayload.matPtr;
 	if (currentPayload.matPtr->lightPtr) {
 		return (depth == 0) ? matPtr->lightPtr->getRadiance() : vec3(0);
-		//return matPtr->lightPtr->getRadiance();
 	}
 
 	currentPayload.initBxDFs();
@@ -146,22 +145,22 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 
 	// sample light
 	vec3 directLight = vec3(0);
-	shared_ptr<Sampler> lightSamplerPtr = sampleLight(currentPayload);
-	if (lightSamplerPtr) {
-		float lightPdf = lightSamplerPtr->getPdf();
-		vec3 lightDir = lightSamplerPtr->getDir();
-		float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
-		vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
-		vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
-		directLight = LightEmission *
-			lightEval *
-			lightWeight *
-			dot(lightDir, currentPayload.normal) /
-			lightPdf;
-	}
+	//shared_ptr<Sampler> lightSamplerPtr = sampleLight(currentPayload);
+	//if (lightSamplerPtr) {
+	//	float lightPdf = lightSamplerPtr->getPdf();
+	//	vec3 lightDir = lightSamplerPtr->getDir();
+	//	float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
+	//	vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
+	//	vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
+	//	directLight = LightEmission *
+	//		lightEval *
+	//		lightWeight *
+	//		dot(lightDir, currentPayload.normal) /
+	//		lightPdf;
+	//}
 
 	// Russian Roulette
-	if (depth >= 3) {
+	if (depth > 3) {
 		if (genRandomFloat() > rrThreshold) {
 			return directLight;
 		}
@@ -182,19 +181,20 @@ vec3 Scene::rayTracing(const Ray& wo, int depth) {
 
 			// acc light contribution
 			PayLoad nextPayLoad;
-			bool nextHit = intersection(Ray(currentPayload.hitPos, wi_dir), nextPayLoad);
+			vec3 newOrigin = currentPayload.hitPos + currentPayload.normal * EPSILON;
+			bool nextHit = intersection(Ray(newOrigin, wi_dir), nextPayLoad);
 			if (nextHit) {
 				shared_ptr<Light>lightPtr = nextPayLoad.matPtr->lightPtr;
 				if (lightPtr) {
 					vec3 dist = nextPayLoad.hitPos - currentPayload.hitPos;
-					float lightPdf = dot(dist, dist) / dot(normalize(-dist), nextPayLoad.normal) / lightPtr->getArea();
-					float scatWeight = powerHeuristic(scatPdf, lightPdf);
-					throughput *= lightPtr->getRadiance() * scatWeight;
-					//throughput *= lightPtr->getRadiance();
+					//float lightPdf = dot(dist, dist) / dot(normalize(-dist), nextPayLoad.normal) / lightPtr->getArea();
+					//float scatWeight = powerHeuristic(scatPdf, lightPdf);
+					//throughput *= lightPtr->getRadiance() * scatWeight;
+					throughput *= lightPtr->getRadiance();
 					indirectLight = throughput;
 				}
 				else {
-					indirectLight = throughput * rayTracing(Ray(currentPayload.hitPos, wi_dir), depth + 1);
+					indirectLight = throughput * rayTracing(Ray(newOrigin, wi_dir), nextPayLoad, depth + 1);
 				}
 			}
 		}
@@ -244,7 +244,8 @@ shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 	if (dot(ws_dir, payload.normal) < 0.f) return nullptr;
 	PayLoad lightPayload;
 	// judget the light point is visible
-	bool isHit = intersection(Ray(payload.hitPos, ws_dir), lightPayload);
+	vec3 newOrigin = payload.hitPos + payload.normal * EPSILON;
+	bool isHit = intersection(Ray(newOrigin, ws_dir), lightPayload);
 	if (!isHit || dot(-ws_dir, lightPayload.normal) < EPSILON) return nullptr;
 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 	float lightDist = glm::length(payload.hitPos - lightPos);
