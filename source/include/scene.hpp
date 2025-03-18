@@ -29,6 +29,7 @@ public:
 	void setNumSamples(int n) { maxNumSample = n; }
 	void setMaxDepth(int n) { maxDepth = n; }
 	void setModel(shared_ptr<Model>m) { modelPtr = m; }
+	void setNumIter(int num) { numIter = num; }
 	void BVHBuild();
 
 	shared_ptr<Sampler> sampleLight(const PayLoad& payload) const;
@@ -42,5 +43,6 @@ private:
 	shared_ptr<BVH>bvhPtr;
 	int maxNumSample = 100;
 	int maxDepth = 5;
+	int numIter = 50;
 	float rrThreshold = 0.7f;
 };
