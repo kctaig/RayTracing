@@ -28,7 +28,7 @@ BVH::BVH(const vector<shared_ptr<Mesh>>& meshptrs)
 	right = std::make_shared<BVH>(rightMeshes);
 }
 
-int BVH::selectAxis() const 
+int BVH::selectAxis() const
 {
 	int axis = 0;
 	float max_length = bboxPtr->getMax().x - bboxPtr->getMin().x;
@@ -53,8 +53,10 @@ bool BVH::intersection(const Ray& ray, PayLoad& payload)
 
 	if (!left && !right) {
 		for (auto& meshptr : meshPtrs) {
-			if (meshptr->intersection(ray, payload))
+			if (meshptr->intersection(ray, payload)) {
+				payload.meshPtr = meshptr;
 				isHit = true;
+			}
 		}
 	}
 	else {

@@ -13,6 +13,7 @@ public:
 	vec3 hitPos;
 	vec3 normal;
 	vec2 uv;
+	shared_ptr<Mesh>meshPtr;
 	shared_ptr<Material> matPtr;
 	shared_ptr<BSDF> bsdfPtr;
 };

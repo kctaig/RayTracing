@@ -22,6 +22,7 @@ public:
 struct Mesh
 {
 	bool intersection(const Ray& ray, PayLoad& payload) const;
+	float calculateArea();
 
 	vector<Vertex> vertices;
 	shared_ptr<BBox> bboxPtr;

@@ -145,19 +145,19 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 
 	// sample light
 	vec3 directLight = vec3(0);
-	//shared_ptr<Sampler> lightSamplerPtr = sampleLight(currentPayload);
-	//if (lightSamplerPtr) {
-	//	float lightPdf = lightSamplerPtr->getPdf();
-	//	vec3 lightDir = lightSamplerPtr->getDir();
-	//	float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
-	//	vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
-	//	vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
-	//	directLight = LightEmission *
-	//		lightEval *
-	//		lightWeight *
-	//		dot(lightDir, currentPayload.normal) /
-	//		lightPdf;
-	//}
+	shared_ptr<Sampler> lightSamplerPtr = sampleLight(currentPayload);
+	if (lightSamplerPtr) {
+		float lightPdf = lightSamplerPtr->getPdf();
+		vec3 lightDir = lightSamplerPtr->getDir();
+		float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
+		vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
+		vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
+		directLight = LightEmission *
+			lightEval *
+			lightWeight *
+			dot(lightDir, currentPayload.normal) /
+			lightPdf;
+	}
 
 	// Russian Roulette
 	if (depth > 3) {
@@ -187,11 +187,13 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 				shared_ptr<Light>lightPtr = nextPayLoad.matPtr->lightPtr;
 				if (lightPtr) {
 					vec3 dist = nextPayLoad.hitPos - currentPayload.hitPos;
-					//float lightPdf = dot(dist, dist) / dot(normalize(-dist), nextPayLoad.normal) / lightPtr->getArea();
-					//float scatWeight = powerHeuristic(scatPdf, lightPdf);
-					//throughput *= lightPtr->getRadiance() * scatWeight;
-					throughput *= lightPtr->getRadiance();
-					indirectLight = throughput;
+					float cosin = dot(normalize(-dist), nextPayLoad.normal);
+					if (cosin > EPSILON) {
+						float lightPdf = dot(dist, dist) / cosin / lightPtr->getArea();
+						float scatWeight = powerHeuristic(scatPdf, lightPdf);
+						throughput *= lightPtr->getRadiance() * scatWeight;
+						indirectLight = throughput;
+					}
 				}
 				else {
 					indirectLight = throughput * rayTracing(Ray(newOrigin, wi_dir), nextPayLoad, depth + 1);

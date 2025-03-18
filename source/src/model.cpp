@@ -26,7 +26,7 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 	float u = dot(P, T) / p_e1;
 	float v = dot(Q, D) / p_e1;
 
-	if (t >= 0.f && t < payload.t &&  u >= 0 && v >= 0 && 1 - u - v >= 0)
+	if (t >= 0.f && t < payload.t && u >= 0 && v >= 0 && 1 - u - v >= 0)
 	{
 		isHit = true;
 		payload.t = t;
@@ -40,6 +40,16 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 		payload.matPtr = matPtr;
 	}
 	return isHit;
+}
+
+float Mesh::calculateArea()
+{
+	vec3 v0 = vertices[0].pos;
+	vec3 v1 = vertices[1].pos;
+	vec3 v2 = vertices[2].pos;
+	vec3 E1 = v1 - v0;
+	vec3 E2 = v2 - v0;
+	return length(cross(E1, E2)) / 2.0f;
 }
 
 void Model::loadFromFile(const string fileDir, const string fileName)
@@ -133,13 +143,7 @@ void Model::loadFromFile(const string fileDir, const string fileName)
 			if (lightPtr != nullptr)
 			{
 				lightPtr->getMeshPtrs().push_back(meshPtr);
-				// 计算光源的面积
-				vec3 v0 = meshPtr->vertices[0].pos;
-				vec3 v1 = meshPtr->vertices[1].pos;
-				vec3 v2 = meshPtr->vertices[2].pos;
-				vec3 E1 = v1 - v0;
-				vec3 E2 = v2 - v0;
-				lightPtr->addArea(length(cross(E1, E2)) / 2.0f);
+				lightPtr->addArea(meshPtr->calculateArea());
 			}
 
 			meshPtrs.push_back(meshPtr);
