@@ -150,13 +150,15 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 		float lightPdf = lightSamplerPtr->getPdf();
 		vec3 lightDir = lightSamplerPtr->getDir();
 		float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
-		vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
-		vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
-		directLight = LightEmission *
-			lightEval *
-			lightWeight *
-			dot(lightDir, currentPayload.normal) /
-			lightPdf;
+		if (lightWeight > EPSILON) {
+			vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
+			vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
+			directLight = LightEmission *
+				lightEval *
+				lightWeight *
+				dot(lightDir, currentPayload.normal) /
+				lightPdf;
+		}
 	}
 
 	// Russian Roulette
@@ -169,7 +171,7 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 	// sample BSDF
 	vec3 indirectLight = vec3(0);
 	bsdfPtr->sampleBSDF(wo.getDir(), currentPayload.normal);
-	float scatPdf = currentPayload.bsdfPtr->BSDFpdf;
+	float scatPdf = bsdfPtr->BSDFpdf;
 	if (scatPdf > EPSILON) {
 		vec3 wi_dir = currentPayload.bsdfPtr->wi_dir;
 		if (dot(wi_dir, currentPayload.normal) > 0.f) {
@@ -188,8 +190,8 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 				if (lightPtr) {
 					vec3 dist = nextPayLoad.hitPos - currentPayload.hitPos;
 					float cosin = dot(normalize(-dist), nextPayLoad.normal);
-					if (cosin > EPSILON) {
-						float lightPdf = dot(dist, dist) / cosin / lightPtr->getArea();
+					float lightPdf = dot(dist, dist) / cosin / lightPtr->getArea();
+					if (lightPdf > EPSILON) {
 						float scatWeight = powerHeuristic(scatPdf, lightPdf);
 						throughput *= lightPtr->getRadiance() * scatWeight;
 						indirectLight = throughput;

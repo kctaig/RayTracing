@@ -25,7 +25,7 @@ vec3 LambertianBRDF::sampleDir(const vec3& wo, const vec3& n) const
 
 float SpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	if (dot(wo, n) > 0 || dot(wi, n) < 0) return 0.f;
+	if (dot(wo, n) >= 0 || dot(wi, n) <= 0) return 0.f;
 	vec3 h = normalize(wi - wo);
 	float nh = dot(n, h);
 	return (alpha + 1.0f) * pow(nh, alpha) / (2.0f * M_PI);
