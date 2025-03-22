@@ -27,7 +27,7 @@ public:
 
 	Material(string name, vec3 kd, vec3 ks, vec3 tr, float ns, float ni) : matName(name), diffuse(kd), specular(ks), transparency(tr), shininess(ns), refraIndex(ni) {}
 
-	vec3 getDiffuse() const {}
+	vec3 getDiffuse(const vec2& texcoord) const;
 
 	string matName;
 	vec3 diffuse;

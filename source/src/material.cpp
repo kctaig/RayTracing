@@ -24,3 +24,8 @@ vec3 Texture::value(const vec2 &texCoord) const
 	float b = data[offset + 2];
 	return vec3(r, g, b);
 }
+
+vec3 Material::getDiffuse(const vec2& texcoord) const
+{
+	return useTexture ? texturePtr->value(texcoord) : diffuse;
+}

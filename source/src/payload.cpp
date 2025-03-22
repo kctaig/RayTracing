@@ -8,12 +8,9 @@ void PayLoad::initBxDFs()
 	shared_ptr<Material> matPtr = meshPtr->matPtr;
     vec3 specular = matPtr->specular;
     float shininess = matPtr->shininess;
-    vec3 diffuse = matPtr->diffuse;
-    if (matPtr->useTexture)
-    {
-        const vec2 texCoord = meshPtr->getTexCoord(uv);
-        diffuse = matPtr->texturePtr->value(texCoord);
-    }
+    vec2 texCoord = meshPtr->getTexCoord(uv);
+    vec3 diffuse = matPtr->getDiffuse(texCoord);
+
     // add LambertianBRDF and SpecularBRDF
     bsdfPtr->bxdfPtrs.push_back(make_shared<LambertianBRDF>(diffuse));
     if (glm::length(specular) > EPSILON)
