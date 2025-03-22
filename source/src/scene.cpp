@@ -162,7 +162,7 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 	}
 
 	// Russian Roulette
-	if (depth > 3) {
+	if (depth >= 3) {
 		if (genRandomFloat() > rrThreshold) {
 			return directLight;
 		}
@@ -179,6 +179,7 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 			vec3 throughput = BSDFeval *
 				dot(wi_dir, currentPayload.normal) /
 				scatPdf;
+
 			if (depth >= 3) throughput /= rrThreshold;
 
 			// acc light contribution
