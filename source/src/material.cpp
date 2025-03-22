@@ -1,42 +1,26 @@
-#include "material.hpp"
 #include "head_include.hpp"
+#include "material.hpp"
 
-float Material::pdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+Texture::Texture(const string& path, const string& texName)
 {
-	return 0.5f / M_PI;
+	data = stbi_loadf(path.c_str(), &width, &height, &channels, 0);
+	if (!data) std::cerr << "Failed to load texture: " << path << std::endl;
+	else std::cout << "Successfully Loaded texture: " << texName << std::endl;
 }
 
-vec3 Material::brdf(const vec3 ray_in, const vec3 ray_out, const vec3 normal)
+vec3 Texture::value(const vec2 &texCoord) const
 {
-	float cos_theta = std::max(0.f, dot(normal, ray_out));
-	//return diffuse * cos_theta / M_PI;
-	return diffuse / M_PI;
-}
-
-vec3 Material::sampleDir(const vec3 ray_in, const vec3 normal)
-{
-	float x_1 = genRandomFloat();
-	float x_2 = genRandomFloat();
-	float z = std::fabs(1.0f - 2.0f * x_1);
-	float r = std::sqrt(1.0f - z * z);
-	float phi = 2 * M_PI * x_2;
-	vec3 local_dir(r * std::cos(phi), r * std::sin(phi), z);
-	vec3 tangent1, tangent2;
-	// 选择一个与 N 不平行的向量，这里使用 (1, 0, 0)，假设 N 不与 (1, 0, 0) 重合
-	vec3 arbitrary = fabs(normal.x > 0.99f) ? vec3(0, 1, 0) : vec3(1, 0, 0);
-	tangent1 = normalize(cross(normal, arbitrary));
-	tangent2 = normalize(cross(normal, tangent1));
-	return local_dir.x * tangent1 + local_dir.y * tangent2 + local_dir.z * normal;
-
-	//std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-	//// sample a direction in the hemisphere
-	//float phi = genRandomFloat() * 2.0f * M_PI;
-	//float cos_theta = sqrt(genRandomFloat()); // cos(theta)
-	//float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
-	//vec3 up = (fabs(normal.z) < 0.999) ? vec3(0, 0, 1) : vec3(1, 0, 0);
-	//vec3 tangent = normalize(cross(normal, up));
-	//vec3 bitangent = cross(normal, tangent);
-	//vec3 sampleDir
-	//	= sin_theta * cos(phi) * tangent + sin_theta * sin(phi) * bitangent + cos_theta * normal;
-	//return normalize(sampleDir);
+	float u = glm::clamp(texCoord.x, 0.f, 1.f);
+	float v = glm::clamp(texCoord.y, 0.f, 1.f);
+	int x = static_cast<int>(u * width);
+	int y = static_cast<int>(v * height);
+	int offset = (y * width + x) * channels;
+	offset = glm::clamp(offset, 0, width * height * channels - 3);
+	float r = data[offset];
+	float g = data[offset + 1];
+	float b = data[offset + 2];
+	return vec3(r, g, b);
 }

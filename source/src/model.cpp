@@ -4,7 +4,7 @@
 #include <chrono>
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader/tiny_obj_loader.h"
+#include "tiny_obj_loader.h"
 
 bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 	bool isHit = false;
@@ -32,12 +32,8 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 		payload.t = t;
 		payload.hitPos = ray.at(t);
 		payload.uv = { u, v };
-		vec3 normal =
-			vertices[0].normal * (1.f - u - v) +
-			vertices[1].normal * u +
-			vertices[2].normal * v;
-		payload.normal = normalize(normal);
-		payload.matPtr = matPtr;
+		payload.normal = normalize(getNormal({ u, v }));
+		//payload.matPtr = matPtr;
 	}
 	return isHit;
 }
@@ -52,11 +48,25 @@ float Mesh::calculateArea()
 	return length(cross(E1, E2)) / 2.0f;
 }
 
+const vec2 Mesh::getTexCoord(const vec2& uv) const
+{
+	return vertices[0].uv * (1.f - uv.x - uv.y) +
+		vertices[1].uv * uv.x +
+		vertices[2].uv * uv.y;
+}
+
+const vec3 Mesh::getNormal(const vec2 &uv) const
+{
+	return vertices[0].normal * (1.f - uv.x - uv.y) + 
+		vertices[1].normal * uv.x + 
+		vertices[2].normal * uv.y;
+}
+
 void Model::loadFromFile(const string fileDir, const string fileName)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	tinyobj::ObjReaderConfig reader_config;
-	reader_config.mtl_search_path = fileDir; // Path to material files
+	reader_config.mtl_search_path = fileDir;
 	tinyobj::ObjReader reader;
 
 	if (!reader.ParseFromFile(fileDir + "/" + fileName + ".obj", reader_config))
@@ -91,6 +101,14 @@ void Model::loadFromFile(const string fileDir, const string fileName)
 			materials[i].shininess,
 			materials[i].ior);
 
+		// texture
+		if (!materials[i].diffuse_texname.empty()) {
+			newMat->useTexture = true;
+			string texturePath = fileDir + "/" + materials[i].diffuse_texname;
+			shared_ptr<Texture> texturePtr = std::make_shared<Texture>(texturePath,materials[i].diffuse_texname);
+			newMat->texturePtr = texturePtr;
+		}
+
 		// light material
 		for (int j = 0; j < lightPtrs.size(); j++)
 		{
@@ -105,15 +123,16 @@ void Model::loadFromFile(const string fileDir, const string fileName)
 
 	for (int i = 0; i < shapes.size(); i++)
 	{
-		int mesh_vertex_offset = 0;								// 面片顶点偏移量
-		int mesh_num = static_cast<int>(shapes[i].mesh.num_face_vertices.size()); // 面片数量
+		int mesh_vertex_offset = 0;
+		int mesh_num = static_cast<int>(shapes[i].mesh.num_face_vertices.size());
+		// check mesh
 		for (int m = 0; m < mesh_num; m++)
 		{
 			std::shared_ptr<Mesh> meshPtr = std::make_shared<Mesh>();
 			int each_mesh_vertex_num = shapes[i].mesh.num_face_vertices[m];
 			meshPtr->vertices.resize(each_mesh_vertex_num);
 			tinyobj::index_t idx;
-			// 查看每个面片的顶点
+			// check the vertex of each face
 			for (int v = 0; v < each_mesh_vertex_num; v++)
 			{
 				idx = shapes[i].mesh.indices[mesh_vertex_offset + v];
@@ -122,23 +141,28 @@ void Model::loadFromFile(const string fileDir, const string fileName)
 				tinyobj::real_t vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
 				tinyobj::real_t vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
 				tinyobj::real_t vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
-				meshPtr->vertices[v].pos = glm::vec3(vx, vy, vz);
+				meshPtr->vertices[v].pos = vec3(vx, vy, vz);
 
 				// add normal
 				tinyobj::real_t nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
 				tinyobj::real_t ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
 				tinyobj::real_t nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
-				meshPtr->vertices[v].normal = glm::vec3(nx, ny, nz);
+				meshPtr->vertices[v].normal = vec3(nx, ny, nz);
 
-				// todo: add texture
+				// add texture
+				tinyobj::real_t tx = attrib.texcoords[2 * size_t(idx.texcoord_index) + 0];
+				tinyobj::real_t ty = attrib.texcoords[2 * size_t(idx.texcoord_index) + 1];
+				meshPtr->vertices[v].uv = vec2(tx, ty);
 			}
+
 			// bbox
 			meshPtr->bboxPtr = std::make_shared<BBox>(meshPtr->vertices);
+
 			// material
 			int matId = shapes[i].mesh.material_ids[m];
 			meshPtr->matPtr = matPtrs[matId];
 
-			//提取光源
+			// light
 			shared_ptr<Light>lightPtr = meshPtr->matPtr->lightPtr;
 			if (lightPtr != nullptr)
 			{

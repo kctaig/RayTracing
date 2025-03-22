@@ -2,16 +2,9 @@
 
 #include "head_include.hpp"
 
-enum BxDFType {
-	DEFAULT = 0,
-	BSDF_DIFFUSE = 1 << 0,
-	BSDF_SPECULAR = 1 << 1,
-	BSDF_TRANSMISSION = 1 << 2,
-};
-
 class BxDF {
 public:
-	BxDF(const vec3& r, const BxDFType& t) : radiance(r), type(t), weight(1.0f) {};
+	BxDF(const vec3& r) : radiance(r), weight(1.0f) {};
 	virtual float pdf(const vec3& wo, const vec3& wi, const vec3& n) const = 0;
 	virtual vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const = 0;
 	virtual vec3 sampleDir(const vec3& wo, const vec3& n) const = 0;
@@ -21,27 +14,35 @@ public:
 	void setWeight(float w) { weight = w; }
 protected:
 	vec3 radiance;
-	BxDFType type;
 	float weight;
 };
 
 class LambertianBRDF : public BxDF {
 public:
-	LambertianBRDF(const vec3& kd) :BxDF(kd, BSDF_DIFFUSE) {}
+	LambertianBRDF(const vec3& kd) :BxDF(kd) {}
 	virtual float pdf(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 sampleDir(const vec3& wo, const vec3& n) const override;
 };
 
-class SpecularBRDF :public BxDF {
+class PhongSpecularBRDF :public BxDF {
 public:
-	SpecularBRDF(const vec3& ks, float ns) : BxDF(ks, BSDF_SPECULAR), alpha(ns) {}
+	PhongSpecularBRDF(const vec3& ks, float ns) : BxDF(ks), alpha(ns) {}
 	virtual float pdf(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 sampleDir(const vec3& wo, const vec3& n) const override;
 private:
 	float alpha;
 };
+
+class MirrorSpecularBRDF :public BxDF {
+public:
+	MirrorSpecularBRDF(const vec3& ks) : BxDF(ks) {}
+	virtual float pdf(const vec3& wo, const vec3& wi, const vec3& n) const override;
+	virtual vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const override;
+	virtual vec3 sampleDir(const vec3& wo, const vec3& n) const override;
+};
+
 
 class BSDF {
 public:

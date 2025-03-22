@@ -135,8 +135,8 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 
 	if (depth == 0 && !intersection(wo, currentPayload)) return vec3(0);
 
-	shared_ptr<Material>matPtr = currentPayload.matPtr;
-	if (currentPayload.matPtr->lightPtr) {
+	shared_ptr<Material>matPtr = currentPayload.meshPtr->matPtr;
+	if (matPtr->lightPtr) {
 		return (depth == 0) ? matPtr->lightPtr->getRadiance() : vec3(0);
 	}
 
@@ -186,7 +186,7 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 			vec3 newOrigin = currentPayload.hitPos + currentPayload.normal * EPSILON;
 			bool nextHit = intersection(Ray(newOrigin, wi_dir), nextPayLoad);
 			if (nextHit) {
-				shared_ptr<Light>lightPtr = nextPayLoad.matPtr->lightPtr;
+				shared_ptr<Light>lightPtr = nextPayLoad.meshPtr->matPtr->lightPtr;
 				if (lightPtr) {
 					vec3 dist = nextPayLoad.hitPos - currentPayload.hitPos;
 					float cosin = dot(normalize(-dist), nextPayLoad.normal);
@@ -194,6 +194,7 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 					if (lightPdf > EPSILON) {
 						float scatWeight = powerHeuristic(scatPdf, lightPdf);
 						throughput *= lightPtr->getRadiance() * scatWeight;
+						//throughput *= lightPtr->getRadiance();
 						indirectLight = throughput;
 					}
 				}
@@ -212,8 +213,8 @@ vec3 Scene::rayTest(const Ray& ray) const
 	PayLoad payload;
 	if (!intersection(ray, payload)) return vec3{ 0 };
 
-	shared_ptr<Material>matPtr = payload.matPtr;
-	if (payload.matPtr->lightPtr)
+	shared_ptr<Material>matPtr = payload.meshPtr->matPtr;
+	if (matPtr->lightPtr)
 		return matPtr->lightPtr->getRadiance();
 	float cos_theta = std::max(0.f, -dot(payload.normal, ray.getDir()));
 	return cos_theta * matPtr->diffuse;

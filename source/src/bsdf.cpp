@@ -23,7 +23,7 @@ vec3 LambertianBRDF::sampleDir(const vec3& wo, const vec3& n) const
 	return toWorld(localDir, n);
 }
 
-float SpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
+float PhongSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
 	if (dot(wo, n) >= 0 || dot(wi, n) <= 0) return 0.f;
 	vec3 h = normalize(wi - wo);
@@ -31,7 +31,7 @@ float SpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 	return (alpha + 1.0f) * pow(nh, alpha) / (2.0f * M_PI);
 }
 
-vec3 SpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
+vec3 PhongSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 {
 	vec3 h = normalize(wi - wo);
 	float nh = std::max(dot(h, n), 0.0f);
@@ -40,7 +40,7 @@ vec3 SpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 	return radiance * spec * normFactor;
 }
 
-vec3 SpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
+vec3 PhongSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
 {
 	float u = genRandomFloat();
 	float v = genRandomFloat();
@@ -92,14 +92,8 @@ void BSDF::sampleBSDF(const vec3& wo_dir, const vec3& n)
 		bxdf_index++;
 	}
 	wi_dir = bxdfPtrs[bxdf_index]->sampleDir(wo_dir, n);
-	BSDFeval = bxdfPtrs[bxdf_index]->eval(wo_dir, wi_dir, n);
-	BSDFpdf = bxdfPtrs[bxdf_index]->pdf(wo_dir, wi_dir, n) * bxdfPtrs[bxdf_index]->getWeight();
-	// add other contributation
-	for (int i = 0; i < bxdfPtrs.size(); i++) {
-		if (i == bxdf_index) continue;
-		BSDFeval += bxdfPtrs[i]->eval(wo_dir, wi_dir, n);
-		BSDFpdf += bxdfPtrs[i]->pdf(wo_dir, wi_dir, n) * bxdfPtrs[i]->getWeight();
-	}
+	BSDFeval = eval(wo_dir, wi_dir, n);
+	BSDFpdf = pdf(wo_dir, wi_dir, n);
 }
 
 vec3 BSDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
@@ -118,4 +112,19 @@ float BSDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 		res += bxdfPtr->pdf(wo, wi, n) * bxdfPtr->getWeight();
 	}
 	return res;
+}
+
+float MirrorSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
+{
+	return 0.0f;
+}
+
+vec3 MirrorSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
+{
+	return vec3();
+}
+
+vec3 MirrorSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
+{
+	return vec3();
 }

@@ -4,6 +4,7 @@
 #include "Ray.hpp"
 #include "material.hpp"
 #include "light.hpp"
+#include "payload.hpp"
 
 class BBox;
 
@@ -19,11 +20,15 @@ public:
 	vec2 uv;
 };
 
-struct Mesh
+class Mesh
 {
+public:
 	bool intersection(const Ray& ray, PayLoad& payload) const;
 	float calculateArea();
 
+	const vec2 getTexCoord(const vec2 &uv) const;
+	const vec3 getNormal(const vec2 &uv) const;
+	
 	vector<Vertex> vertices;
 	shared_ptr<BBox> bboxPtr;
 	shared_ptr<Material> matPtr;

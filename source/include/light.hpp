@@ -2,7 +2,7 @@
 
 #include "head_include.hpp"
 
-struct Mesh;
+class Mesh;
 
 class Light
 {
