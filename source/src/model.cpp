@@ -33,7 +33,8 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 		payload.hitPos = ray.at(t);
 		payload.uv = { u, v };
 		payload.normal = normalize(getNormal({ u, v }));
-		//payload.matPtr = matPtr;
+		// bathroom2模型中的法向量有问题
+		//if (dot(payload.normal, ray.getDir()) > 0) payload.normal = -payload.normal;
 	}
 	return isHit;
 }
