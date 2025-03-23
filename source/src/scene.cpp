@@ -202,10 +202,12 @@ vec3 Scene::rayTest(const Ray& ray) const
 	shared_ptr<Material>matPtr = currentpayload.meshPtr->matPtr;
 	if (matPtr->lightPtr)
 		return matPtr->lightPtr->getRadiance();
-	float cos_theta = std::max(0.f, -dot(currentpayload.normal, ray.getDir()));
+	float cos_theta = -dot(currentpayload.normal, ray.getDir());
 	vec2 texcoord = currentpayload.meshPtr->getTexCoord(currentpayload.uv);
 	vec3 diffuse = matPtr->getDiffuse(texcoord);
-	return cos_theta * diffuse;
+	if (cos_theta < EPSILON) return vec3(0);
+	//return cos_theta * diffuse;
+	return currentpayload.normal;
 }
 
 shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const

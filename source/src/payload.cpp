@@ -15,9 +15,9 @@ void PayLoad::initBxDFs()
     if (shininess >= 10000)
         bsdfPtr->bxdfPtrs.push_back(make_shared<MirrorSpecularBRDF>(specular));
     else {
-    bsdfPtr->bxdfPtrs.push_back(make_shared<LambertianBRDF>(diffuse));
-    if (glm::length(specular) > EPSILON)
-        bsdfPtr->bxdfPtrs.push_back(make_shared<PhongSpecularBRDF>(specular, shininess));
+        bsdfPtr->bxdfPtrs.push_back(make_shared<LambertianBRDF>(diffuse));
+        if (glm::length(specular) > EPSILON)
+            bsdfPtr->bxdfPtrs.push_back(make_shared<PhongSpecularBRDF>(specular, shininess));
     }
     bsdfPtr->generateWeight();
 }

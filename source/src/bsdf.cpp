@@ -9,7 +9,7 @@ float LambertianBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 
 vec3 LambertianBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	//if (dot(n, wi) <= 0.f) return vec3(0.f);
+	if (dot(n, wi) <= 0.f) return vec3(0.f);
 	return radiance / M_PI;
 }
 
