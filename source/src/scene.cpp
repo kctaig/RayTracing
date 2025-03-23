@@ -178,6 +178,7 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 					float scatWeight = powerHeuristic(bsdfPtr->BSDFpdf, lightPdf);
 					//directLight += throughput * lightPtr->getRadiance() * scatWeight;
 					directLight += throughput * lightPtr->getRadiance();
+					return directLight;
 				}
 			}
 			// Russian Roulette

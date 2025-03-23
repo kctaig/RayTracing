@@ -63,6 +63,23 @@ vec3 PhongSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
 	return wi;
 }
 
+float MirrorSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
+{
+	return 1.0f;
+}
+
+vec3 MirrorSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
+{
+	float cosTheta = abs(dot(wi, n));
+	vec3 fresnelSchlick = radiance + (vec3(1.0f) - radiance) * pow(1.0f - cosTheta, 5.0f);
+	return fresnelSchlick / cosTheta;
+}
+
+vec3 MirrorSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
+{
+	return normalize(wo - 2.0f * dot(wo, n) * n );
+}
+
 void BSDF::generateWeight()
 {
 	vec3 cie1931Weights(0.212671f, 0.715160f, 0.072169f);
@@ -113,19 +130,4 @@ float BSDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 		res += bxdfPtr->pdf(wo, wi, n) * bxdfPtr->getWeight();
 	}
 	return res;
-}
-
-float MirrorSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
-{
-	return 0.0f;
-}
-
-vec3 MirrorSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
-{
-	return vec3();
-}
-
-vec3 MirrorSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
-{
-	return vec3();
 }
