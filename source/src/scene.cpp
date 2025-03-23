@@ -141,21 +141,23 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 
 	// sample light
 	vec3 directLight = vec3(0);
-	//shared_ptr<Sampler> lightSamplerPtr = sampleLight(currentPayload);
-	//if (lightSamplerPtr) {
-	//	float lightPdf = lightSamplerPtr->getPdf();
-	//	vec3 lightDir = lightSamplerPtr->getDir();
-	//	float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
-	//	if (lightWeight > EPSILON) {
-	//		vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
-	//		vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
-	//		directLight += LightEmission *
-	//			lightEval *
-	//			lightWeight *
-	//			dot(lightDir, currentPayload.normal) /
-	//			lightPdf;
-	//	}
-	//}
+	if (!bsdfPtr->perfectSpecular) {
+	shared_ptr<Sampler> lightSamplerPtr = sampleLight(currentPayload);
+	if (lightSamplerPtr) {
+		float lightPdf = lightSamplerPtr->getPdf();
+		vec3 lightDir = lightSamplerPtr->getDir();
+		float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
+		if (lightWeight > EPSILON) {
+			vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
+			vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
+			directLight += LightEmission *
+				lightEval *
+				lightWeight *
+				dot(lightDir, currentPayload.normal) /
+				lightPdf;
+		}
+	}
+	}
 
 	// sample BSDF
 	vec3 indirectLight = vec3(0);
@@ -176,8 +178,8 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 				float lightPdf = dot(dist, dist) / cosin / lightPtr->getArea();
 				if (lightPdf > EPSILON) {
 					float scatWeight = powerHeuristic(bsdfPtr->BSDFpdf, lightPdf);
-					//directLight += throughput * lightPtr->getRadiance() * scatWeight;
-					directLight += throughput * lightPtr->getRadiance();
+					directLight += throughput * lightPtr->getRadiance() * scatWeight;
+					//directLight += throughput * lightPtr->getRadiance();
 					return directLight;
 				}
 			}
@@ -247,7 +249,7 @@ shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 
 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 	float lightDist = glm::length(payload.hitPos - lightPos);
-	if (fabs(hitDist - lightDist) > EPSILON) 
+	if (fabs(hitDist - lightDist) > 0.01) 
 		return nullptr;
 
 	float lightPdf = lightDist * lightDist /
