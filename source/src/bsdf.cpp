@@ -3,8 +3,8 @@
 float LambertianBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
 	float cos_theta = std::max(0.0f, dot(n, wi));
-	//return cos_theta / M_PI;
-	return 1.0f / M_PI;
+	return cos_theta / M_PI;
+	//return 1.0f / M_PI;
 }
 
 vec3 LambertianBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
