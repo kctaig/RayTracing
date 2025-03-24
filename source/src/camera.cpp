@@ -1,6 +1,6 @@
 #include "camera.hpp"
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
+#include <ext/matrix_transform.hpp>
+#include <ext/matrix_clip_space.hpp>
 
 Ray Camera::rayCasting(const shared_ptr<Film>filmPtr, const ivec2& pixelCoord) const
 {

@@ -3,54 +3,40 @@ set(CMAKE_CXX_STANDARD 17)
 aux_source_directory(src SOURCE_FILES)
 file(GLOB_RECURSE HEADER_FILES "include/*.hpp")
 
+add_executable(${TARGET_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+
+set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty")
+
+# 头文件目录
+target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${TARGET_NAME} PUBLIC ${THIRD_PARTY_DIR}/glm)
+target_include_directories(${TARGET_NAME} PUBLIC ${THIRD_PARTY_DIR}/tiny_obj_loader)
+target_include_directories(${TARGET_NAME} PUBLIC ${THIRD_PARTY_DIR}/tinyxml2)
+target_include_directories(${TARGET_NAME} PUBLIC ${THIRD_PARTY_DIR}/stb_image)
+
+# 添加OpenMP
 find_package(OpenMP REQUIRED)
+if (NOT OPENMP_FOUND)
+    message("Not find OpenMP")
+    return ()
+else ()
+    target_link_libraries(${TARGET_NAME} OpenMP::OpenMP_CXX)
+endif()
 
-# 寻找VTK
-# find_package(VTK REQUIRED 
-# COMPONENTS
-    # vtkCommonCore
-    # vtkCommonDataModel
-    # vtkInteractionStyle
-    # vtkIOImage
-    # vtkImagingCore
-    # vtkRenderingCore
-    # vtkRenderingOpenGL2
-# )
-
+# 添加VTK
 find_package(VTK REQUIRED)
 if (NOT VTK_FOUND)
   message("Not find VTK")
   return ()
 else ()
-  message("VTK found")
   include(${VTK_USE_FILE})
-  link_directories(${VTK_LIBRARY_DIRS})
-#   add_definitions(${VTK_DEFINITIONS})
+  target_link_libraries(${TARGET_NAME} ${VTK_LIBRARIES})
+  target_include_directories(${TARGET_NAME} PUBLIC ${VTK_INCLUDE_DIRS})
 endif()
 
-add_executable(RayTracing ${SOURCE_FILES} ${HEADER_FILES})
-
-# 设置头文件
-set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/3rdparty")
-set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
-set(GLM_INCLUDE "${THIRD_PARTY_DIR}/glm")
-set(MODEL_LOADER_INCLUDE "${THIRD_PARTY_DIR}/tiny_obj_loader")
-set(TINYXML_DIR "${THIRD_PARTY_DIR}/tinyxml2")
-set(TEXTURE_LOADER_INCLUDE "${THIRD_PARTY_DIR}/stb_image")
-
-# 指定目标需要链接的库
-target_link_libraries(RayTracing 
+# 连接其他库
+target_link_libraries(${TARGET_NAME} 
     glm
     OpenMP::OpenMP_CXX
     tinyxml2
-    ${VTK_LIBRARIES}
 )
-message(STATUS "VTK_LIBRARIES: ${VTK_LIBRARIES}")
-
-# 头文件目录
-target_include_directories(${TARGET_NAME} PUBLIC ${THIRD_PARTY_DIR})
-target_include_directories(${TARGET_NAME} PUBLIC ${INCLUDE_DIR})
-target_include_directories(${TARGET_NAME} PUBLIC ${GLM_INCLUDE})
-target_include_directories(${TARGET_NAME} PUBLIC ${MODEL_LOADER_INCLUDE})
-target_include_directories(${TARGET_NAME} PUBLIC ${TEXTURE_LOADER_INCLUDE})
-target_include_directories(RayTracing PUBLIC ${VTK_INCLUDE_DIRS})

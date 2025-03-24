@@ -2,7 +2,7 @@
 #include <sstream>
 #include <random>
 #include <chrono>
-#include "tinyxml2/tinyxml2.h"
+#include "tinyxml2.h"
 #include "light.hpp"
 #include "scene.hpp"
 
