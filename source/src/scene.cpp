@@ -6,6 +6,14 @@
 #include "light.hpp"
 #include "scene.hpp"
 
+#include <vtkSmartPointer.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderer.h>
+#include <vtkImageData.h>
+#include <vtkImageActor.h>
+#include <vtkJPEGWriter.h>
+#include <vtkSmartPointer.h>
+
 Scene::Scene(const string sceneDir, const string fileName)
 {
 	modelPtr = std::make_shared<Model>();
@@ -86,6 +94,35 @@ void Scene::render()
 	int numPixels = w * h;
 	int ssp = 0;
 	auto start = std::chrono::high_resolution_clock::now();
+
+	// 创建VTK创建渲染窗口
+	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+	if (renderWindow.GetPointer() == nullptr) {
+		std::cerr << "Render window is not initialized correctly." << std::endl;
+		return;
+	}
+	// 创建渲染器
+	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
+	if (renderer.GetPointer() == nullptr) {
+		std::cerr << "Renderer is not initialized correctly." << std::endl;
+		return;
+	}
+
+	renderWindow->AddRenderer(renderer);
+	// 检查是否成功添加
+	if (renderWindow->HasRenderer(renderer) == 0) {
+		std::cerr << "Renderer was not added to the render window." << std::endl;
+		return;
+	}
+
+	// 创建图像演员
+	vtkSmartPointer<vtkImageActor> imageActor = vtkSmartPointer<vtkImageActor>::New();
+
+	// 创建VTK图像数据对象
+	vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
+	imageData->SetDimensions(w, h, 1);
+	imageData->AllocateScalars(VTK_UNSIGNED_CHAR, 3);
+
 	while (++ssp < maxNumSample) {
 #pragma omp parallel for
 		for (int i = 0; i < numPixels; i++)
@@ -96,7 +133,22 @@ void Scene::render()
 			// bvhPtr->intersection(ray, PayLoad{});
 			vec3 color = rayTracing(ray, PayLoad{}, 0);
 			filmPtr->addToPixel(x, y, color);
+
+			// 将颜色数据存储到VTK图像数据对象中
+			unsigned char* ptr = static_cast<unsigned char*>(imageData->GetScalarPointer(x, y, 0));
+			ptr[0] = static_cast<unsigned char>(color.r * 255);
+			ptr[1] = static_cast<unsigned char>(color.g * 255);
+			ptr[2] = static_cast<unsigned char>(color.b * 255);
 		}
+
+		imageData->Modified(); // 通知VTK图像数据已更改
+
+		// 设置图像演员的输入数据
+		imageActor->SetInputData(imageData);
+		renderer->AddActor(imageActor);
+
+		renderWindow->Render();
+
 		if (ssp % 10 == 0) {
 			auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 			cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;

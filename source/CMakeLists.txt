@@ -5,6 +5,29 @@ file(GLOB_RECURSE HEADER_FILES "include/*.hpp")
 
 find_package(OpenMP REQUIRED)
 
+# 寻找VTK
+# find_package(VTK REQUIRED 
+# COMPONENTS
+    # vtkCommonCore
+    # vtkCommonDataModel
+    # vtkInteractionStyle
+    # vtkIOImage
+    # vtkImagingCore
+    # vtkRenderingCore
+    # vtkRenderingOpenGL2
+# )
+
+find_package(VTK REQUIRED)
+if (NOT VTK_FOUND)
+  message("Not find VTK")
+  return ()
+else ()
+  message("VTK found")
+  include(${VTK_USE_FILE})
+  link_directories(${VTK_LIBRARY_DIRS})
+#   add_definitions(${VTK_DEFINITIONS})
+endif()
+
 add_executable(RayTracing ${SOURCE_FILES} ${HEADER_FILES})
 
 # 设置头文件
@@ -17,10 +40,12 @@ set(TEXTURE_LOADER_INCLUDE "${THIRD_PARTY_DIR}/stb_image")
 
 # 指定目标需要链接的库
 target_link_libraries(RayTracing 
-glm
-OpenMP::OpenMP_CXX
-tinyxml2
+    glm
+    OpenMP::OpenMP_CXX
+    tinyxml2
+    ${VTK_LIBRARIES}
 )
+message(STATUS "VTK_LIBRARIES: ${VTK_LIBRARIES}")
 
 # 头文件目录
 target_include_directories(${TARGET_NAME} PUBLIC ${THIRD_PARTY_DIR})
@@ -28,3 +53,4 @@ target_include_directories(${TARGET_NAME} PUBLIC ${INCLUDE_DIR})
 target_include_directories(${TARGET_NAME} PUBLIC ${GLM_INCLUDE})
 target_include_directories(${TARGET_NAME} PUBLIC ${MODEL_LOADER_INCLUDE})
 target_include_directories(${TARGET_NAME} PUBLIC ${TEXTURE_LOADER_INCLUDE})
+target_include_directories(RayTracing PUBLIC ${VTK_INCLUDE_DIRS})
