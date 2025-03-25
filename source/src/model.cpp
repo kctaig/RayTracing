@@ -56,10 +56,10 @@ const vec2 Mesh::getTexCoord(const vec2& uv) const
 		vertices[2].uv * uv.y;
 }
 
-const vec3 Mesh::getNormal(const vec2 &uv) const
+const vec3 Mesh::getNormal(const vec2& uv) const
 {
-	return vertices[0].normal * (1.f - uv.x - uv.y) + 
-		vertices[1].normal * uv.x + 
+	return vertices[0].normal * (1.f - uv.x - uv.y) +
+		vertices[1].normal * uv.x +
 		vertices[2].normal * uv.y;
 }
 
@@ -106,7 +106,7 @@ void Model::loadFromFile(const string fileDir, const string fileName)
 		if (!materials[i].diffuse_texname.empty()) {
 			newMat->useTexture = true;
 			string texturePath = fileDir + "/" + materials[i].diffuse_texname;
-			shared_ptr<Texture> texturePtr = std::make_shared<Texture>(texturePath,materials[i].diffuse_texname);
+			shared_ptr<Texture> texturePtr = std::make_shared<Texture>(texturePath, materials[i].diffuse_texname);
 			newMat->texturePtr = texturePtr;
 		}
 

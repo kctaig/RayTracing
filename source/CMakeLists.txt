@@ -24,15 +24,15 @@ else ()
 endif()
 
 # 添加VTK
-find_package(VTK REQUIRED)
-if (NOT VTK_FOUND)
-  message("Not find VTK")
-  return ()
-else ()
-  include(${VTK_USE_FILE})
-  target_link_libraries(${TARGET_NAME} ${VTK_LIBRARIES})
-  target_include_directories(${TARGET_NAME} PUBLIC ${VTK_INCLUDE_DIRS})
-endif()
+# find_package(VTK REQUIRED)
+# if (NOT VTK_FOUND)
+#   message("Not find VTK")
+#   return ()
+# else ()
+#   include(${VTK_USE_FILE})
+#   target_link_libraries(${TARGET_NAME} ${VTK_LIBRARIES})
+#   target_include_directories(${TARGET_NAME} PUBLIC ${VTK_INCLUDE_DIRS})
+# endif()
 
 # 连接其他库
 target_link_libraries(${TARGET_NAME} 

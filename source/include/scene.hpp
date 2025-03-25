@@ -12,7 +12,7 @@ public:
 	Scene() = default;
 	~Scene() = default;
 
-	Scene(const std::string fileDir, const std::string fileName);
+	Scene(const string fileDir, string fileName);
 
 	// 未使用加速结构
 	bool iterIntersection(const Ray& ray, PayLoad& payload) const;

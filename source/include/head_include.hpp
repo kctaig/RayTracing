@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <random>
-#include <glm/glm.hpp>
+#include <glm.hpp>
 
 using glm::ivec2;
 using glm::vec2;

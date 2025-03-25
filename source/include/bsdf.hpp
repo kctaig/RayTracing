@@ -43,7 +43,6 @@ public:
 	virtual vec3 sampleDir(const vec3& wo, const vec3& n) const override;
 };
 
-
 class BSDF {
 public:
 	void generateWeight();
