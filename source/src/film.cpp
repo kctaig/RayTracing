@@ -23,7 +23,7 @@ void Film::saveToFile(const std::string fileName, int ssp) const
 	string dir = "../../output/" + fileName + "/";
 	if (!std::filesystem::exists(dir))
 	{
-		std::filesystem::create_directory(dir);
+		std::filesystem::create_directories(dir);
 	}
 	string filePath = dir + fileName + "_" + std::to_string(ssp) + ".ppm";
 	std::ofstream outfile(filePath, std::ios::binary);
@@ -45,10 +45,10 @@ void Film::saveToFile(const std::string fileName, int ssp) const
 			//if (color.x != color.x || color.y != color.y || color.z != color.z) color = vec3(0, 1, 0);
 			color = glm::clamp(color, 0.f, 1.f);
 			color = glm::pow(color, glm::vec3(gamma));
-			glm::ivec3 pixelColor = glm::clamp(color * 255.f, 0.f, 255.f);
-			outfile << static_cast<uint8_t>(pixelColor.x)
-				<< static_cast<uint8_t>(pixelColor.y)
-				<< static_cast<uint8_t>(pixelColor.z);
+			color *= 255.99f;
+			outfile << static_cast<uint8_t>(color.x)
+				<< static_cast<uint8_t>(color.y)
+				<< static_cast<uint8_t>(color.z);
 		}
 	}
 	outfile.close();
