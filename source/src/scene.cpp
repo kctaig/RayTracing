@@ -96,28 +96,28 @@ void Scene::render()
 	int ssp = 0;
 	auto start = std::chrono::high_resolution_clock::now();
 
-	//// åˆ›å»ºVTKåˆ›å»ºæ¸²æŸ“çª—å£
+	//// ´´½¨VTK´´½¨äÖÈ¾´°¿Ú
 	//vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 	//if (renderWindow.GetPointer() == nullptr) {
 	//	std::cerr << "Render window is not initialized correctly." << std::endl;
 	//	return;
 	//}
 	//renderWindow->SetSize(w, h);
-	//// åˆ›å»ºæ¸²æŸ“å™¨
+	//// ´´½¨äÖÈ¾Æ÷
 	//vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
 	//if (renderer.GetPointer() == nullptr) {
 	//	std::cerr << "Renderer is not initialized correctly." << std::endl;
 	//	return;
 	//}
 	//renderWindow->AddRenderer(renderer);
-	//// æ£€æŸ¥æ˜¯å¦æˆåŠŸæ·»åŠ 
+	//// ¼ì²éÊÇ·ñ³É¹¦Ìí¼Ó
 	//if (renderWindow->HasRenderer(renderer) == 0) {
 	//	std::cerr << "Renderer was not added to the render window." << std::endl;
 	//	return;
 	//}
-	//// åˆ›å»ºå›¾åƒæ¼”å‘˜
+	//// ´´½¨Í¼ÏñÑİÔ±
 	//vtkSmartPointer<vtkImageActor> imageActor = vtkSmartPointer<vtkImageActor>::New();
-	//// åˆ›å»ºVTKå›¾åƒæ•°æ®å¯¹è±¡
+	//// ´´½¨VTKÍ¼ÏñÊı¾İ¶ÔÏó
 	//vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
 	//imageData->SetDimensions(w, h, 1);
 	//imageData->AllocateScalars(VTK_UNSIGNED_CHAR, 3);
@@ -133,15 +133,15 @@ void Scene::render()
 			vec3 color = rayTracing(ray, PayLoad{}, 0);
 			filmPtr->addToPixel(x, y, color);
 
-			// å°†é¢œè‰²æ•°æ®å­˜å‚¨åˆ°VTKå›¾åƒæ•°æ®å¯¹è±¡ä¸­
+			// ½«ÑÕÉ«Êı¾İ´æ´¢µ½VTKÍ¼ÏñÊı¾İ¶ÔÏóÖĞ
 			//unsigned char* ptr = static_cast<unsigned char*>(imageData->GetScalarPointer(x, y, 0));
 			//ptr[0] = static_cast<unsigned char>(color.r * 255);
 			//ptr[1] = static_cast<unsigned char>(color.g * 255);
 			//ptr[2] = static_cast<unsigned char>(color.b * 255);
 		}
 
-		//imageData->Modified(); // é€šçŸ¥VTKå›¾åƒæ•°æ®å·²æ›´æ”¹
-		//// è®¾ç½®å›¾åƒæ¼”å‘˜çš„è¾“å…¥æ•°æ®
+		//imageData->Modified(); // Í¨ÖªVTKÍ¼ÏñÊı¾İÒÑ¸ü¸Ä
+		//// ÉèÖÃÍ¼ÏñÑİÔ±µÄÊäÈëÊı¾İ
 		//imageActor->SetInputData(imageData);
 		//renderer->AddActor(imageActor);
 		//renderWindow->Render();
@@ -194,20 +194,20 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 	shared_ptr<Sampler> lightSamplerPtr = sampleLight(currentPayload);
 	if (!bsdfPtr->perfectSpecular) {
 		// add direct light
-	if (lightSamplerPtr) {
-		float lightPdf = lightSamplerPtr->getPdf();
-		vec3 lightDir = lightSamplerPtr->getDir();
-		float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
-		if (lightWeight > EPSILON) {
-			vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
-			vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
+		if (lightSamplerPtr) {
+			float lightPdf = lightSamplerPtr->getPdf();
+			vec3 lightDir = lightSamplerPtr->getDir();
+			float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
+			if (lightWeight > EPSILON) {
+				vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
+				vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
 				directLight = LightEmission *
-				lightEval *
-				lightWeight *
-				dot(lightDir, currentPayload.normal) /
-				lightPdf;
+					lightEval *
+					lightWeight *
+					dot(lightDir, currentPayload.normal) /
+					lightPdf;
+			}
 		}
-	}
 	}
 
 	// sample BSDF
@@ -226,20 +226,25 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 			if (lightPtr) {
 				indirectLight = throughput * lightPtr->getRadiance();
 				if (!bsdfPtr->perfectSpecular) {
-				float lightPdf = dot(dist, dist) / cosin / lightPtr->getArea();
-				if (lightPdf > EPSILON) {
+					vec3 dist = nextPayLoad.hitPos - newOrigin;
+					float cosTheta = dot(normalize(-dist), nextPayLoad.normal);
+					float lightArea = 0.f;
+					for (shared_ptr<Light> lightPtr : modelPtr->getLightPtrs()) {
+						lightArea += lightPtr->getArea();
+					}
+					float lightPdf = dot(dist, dist) / cosTheta / lightArea;
 					float scatWeight = powerHeuristic(bsdfPtr->BSDFpdf, lightPdf);
 					indirectLight *= scatWeight;
 				}
 			}
 			else {
-			// Russian Roulette
-			if (depth >= 3) {
-				if (genRandomFloat() > rrThreshold) {
-					return directLight;
+				// Russian Roulette
+				if (depth >= 3) {
+					if (genRandomFloat() > rrThreshold) {
+						return directLight;
+					}
+					throughput /= rrThreshold;
 				}
-				throughput /= rrThreshold;
-			}
 				// continue accumulate indirect light
 				indirectLight = throughput * rayTracing(Ray(currentPayload.hitPos, wi_dir), nextPayLoad, depth + 1);
 			}
@@ -292,7 +297,7 @@ shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 
 	vec3 ws_dir = normalize(lightPos - payload.hitPos);
 
-	//  the light in back face 
+	//  the light in back face
 	if (dot(ws_dir, payload.normal) < EPSILON) return nullptr;
 
 	PayLoad lightPayload;
@@ -300,12 +305,12 @@ shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 	// judget the light point is visible
 	vec3 newOrigin = payload.hitPos + payload.normal * EPSILON;
 	bool isHit = intersection(Ray(newOrigin, ws_dir), lightPayload);
-	if (!isHit || dot(-ws_dir, lightPayload.normal) < EPSILON) 
+	if (!isHit || dot(-ws_dir, lightPayload.normal) < EPSILON)
 		return nullptr;
 
 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 	float lightDist = glm::length(payload.hitPos - lightPos);
-	if (fabs(hitDist - lightDist) > 0.01) 
+	if (fabs(hitDist - lightDist) > 0.01)
 		return nullptr;
 
 	float lightPdf = lightDist * lightDist /
