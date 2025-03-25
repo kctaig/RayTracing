@@ -10,7 +10,7 @@ class PayLoad
 {
 public:
 	PayLoad() : hitPos(vec3(0)), normal(vec3(0)), uv(vec2(0)), t(FLT_MAX) {}
-	bool initBxDFs();
+	void initBxDFs();
 
 	float t;
 	vec3 hitPos;

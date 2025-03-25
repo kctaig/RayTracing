@@ -2,14 +2,14 @@
 
 float LambertianBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	float cos_theta = std::max(0.0f, dot(n, wi));
-	return cos_theta / M_PI;
+	//float cos_theta = std::max(0.0f, dot(n, wi));
+	return dot(n, wi) / M_PI;
 	//return 1.0f / M_PI;
 }
 
 vec3 LambertianBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	if (dot(n, wi) <= 0.f) return vec3(0.f);
+	//if (dot(n, wi) <= 0.f) return vec3(0.f);
 	return radiance / M_PI;
 }
 
@@ -26,7 +26,7 @@ vec3 LambertianBRDF::sampleDir(const vec3& wo, const vec3& n) const
 
 float PhongSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	if (dot(wo, n) >= 0 || dot(wi, n) <= 0) return 0.f;
+	//if (dot(wo, n) >= 0 || dot(wi, n) <= 0) return 0.f;
 	vec3 h = normalize(wi - wo);
 	float nh = dot(n, h);
 	return (alpha + 1.0f) * pow(nh, alpha) / (2.0f * M_PI);
@@ -35,7 +35,8 @@ float PhongSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) cons
 vec3 PhongSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 {
 	vec3 h = normalize(wi - wo);
-	float nh = std::max(dot(h, n), 0.0f);
+	//float nh = std::max(dot(h, n), 0.0f);
+	float nh = dot(h, n);
 	float spec = pow(nh, alpha);
 	float normFactor = (alpha + 2.0f) / (2.0f * M_PI);
 	return radiance * spec * normFactor;
@@ -70,14 +71,14 @@ float MirrorSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) con
 
 vec3 MirrorSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	float cosTheta = abs(dot(wi, n));
+	float cosTheta = dot(wi, n);
 	vec3 fresnelSchlick = radiance + (vec3(1.0f) - radiance) * pow(1.0f - cosTheta, 5.0f);
 	return fresnelSchlick / cosTheta;
 }
 
 vec3 MirrorSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
 {
-	return normalize(wo - 2.0f * dot(wo, n) * n );
+	return normalize(wo - 2.0f * dot(wo, n) * n);
 }
 
 void BSDF::generateWeight()
@@ -96,8 +97,9 @@ void BSDF::generateWeight()
 	}
 }
 
-void BSDF::sampleBSDF(const vec3& wo_dir, const vec3& n)
+bool BSDF::sampleBSDF(const vec3& wo_dir, const vec3& n)
 {
+	if (bxdfPtrs.empty()) return false;
 	std::vector<float> weiPreSum(bxdfPtrs.size());
 	for (int i = 0; i < bxdfPtrs.size(); i++)
 	{
@@ -109,7 +111,13 @@ void BSDF::sampleBSDF(const vec3& wo_dir, const vec3& n)
 	while (bxdf_index < bxdfPtrs.size() && weiPreSum[bxdf_index] < randomValue) {
 		bxdf_index++;
 	}
+
 	wi_dir = bxdfPtrs[bxdf_index]->sampleDir(wo_dir, n);
+	// judge the wi_dir is valid or not
+	if (dot(wi_dir, n) < EPSILON) {
+		return false;
+	}
+
 	BSDFeval = eval(wo_dir, wi_dir, n);
 	BSDFpdf = pdf(wo_dir, wi_dir, n);
 }

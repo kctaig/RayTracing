@@ -46,7 +46,7 @@ public:
 class BSDF {
 public:
 	void generateWeight();
-	void sampleBSDF(const vec3& wo, const vec3& n);
+	bool sampleBSDF(const vec3& wo, const vec3& n);
 	vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const;
 	float pdf(const vec3& wo, const vec3& wi, const vec3& n) const;
 
