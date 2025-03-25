@@ -1,19 +1,16 @@
 #include "bsdf.hpp"
 
-float LambertianBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
+float LambertianDiffuseBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	//float cos_theta = std::max(0.0f, dot(n, wi));
 	return dot(n, wi) / M_PI;
-	//return 1.0f / M_PI;
 }
 
-vec3 LambertianBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
+vec3 LambertianDiffuseBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	//if (dot(n, wi) <= 0.f) return vec3(0.f);
 	return radiance / M_PI;
 }
 
-vec3 LambertianBRDF::sampleDir(const vec3& wo, const vec3& n) const
+vec3 LambertianDiffuseBRDF::sampleDir(const vec3& wo, const vec3& n) const
 {
 	float u = genRandomFloat();
 	float v = genRandomFloat();
@@ -26,7 +23,6 @@ vec3 LambertianBRDF::sampleDir(const vec3& wo, const vec3& n) const
 
 float PhongSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	//if (dot(wo, n) >= 0 || dot(wi, n) <= 0) return 0.f;
 	vec3 h = normalize(wi - wo);
 	float nh = dot(n, h);
 	return (alpha + 1.0f) * pow(nh, alpha) / (2.0f * M_PI);
@@ -35,7 +31,6 @@ float PhongSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) cons
 vec3 PhongSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 {
 	vec3 h = normalize(wi - wo);
-	//float nh = std::max(dot(h, n), 0.0f);
 	float nh = dot(h, n);
 	float spec = pow(nh, alpha);
 	float normFactor = (alpha + 2.0f) / (2.0f * M_PI);
@@ -81,7 +76,7 @@ vec3 MirrorSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
 	return normalize(wo - 2.0f * dot(wo, n) * n);
 }
 
-void BSDF::generateWeight()
+void BSDF::generateBSDFWeight()
 {
 	vec3 cie1931Weights(0.212671f, 0.715160f, 0.072169f);
 	float sum = 0.f;
@@ -97,29 +92,17 @@ void BSDF::generateWeight()
 	}
 }
 
-bool BSDF::sampleBSDF(const vec3& wo_dir, const vec3& n)
+bool BSDF::sampleBSDF(const vec3& wo, const vec3& n)
 {
 	if (bxdfPtrs.empty()) return false;
-	std::vector<float> weiPreSum(bxdfPtrs.size());
-	for (int i = 0; i < bxdfPtrs.size(); i++)
-	{
-		if (i == 0) weiPreSum[i] = bxdfPtrs[i]->getWeight();
-		else weiPreSum[i] = weiPreSum[i - 1] + bxdfPtrs[i]->getWeight();
-	}
-	float randomValue = genRandomFloat() * weiPreSum.back();
-	int bxdf_index = 0;
-	while (bxdf_index < bxdfPtrs.size() && weiPreSum[bxdf_index] < randomValue) {
-		bxdf_index++;
-	}
-
-	wi_dir = bxdfPtrs[bxdf_index]->sampleDir(wo_dir, n);
+	wi = sampelDir(wo, n);
 	// judge the wi_dir is valid or not
-	if (dot(wi_dir, n) < EPSILON) {
+	if (dot(wi, n) < EPSILON) {
 		return false;
 	}
-
-	BSDFeval = eval(wo_dir, wi_dir, n);
-	BSDFpdf = pdf(wo_dir, wi_dir, n);
+	BSDFeval = eval(wo, wi, n);
+	BSDFpdf = pdf(wo, wi, n);
+	return true;
 }
 
 vec3 BSDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
@@ -138,4 +121,20 @@ float BSDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 		res += bxdfPtr->pdf(wo, wi, n) * bxdfPtr->getWeight();
 	}
 	return res;
+}
+
+vec3 BSDF::sampelDir(const vec3& wo, const vec3& n) const
+{
+	std::vector<float> weiPreSum(bxdfPtrs.size());
+	for (int i = 0; i < bxdfPtrs.size(); i++)
+	{
+		if (i == 0) weiPreSum[i] = bxdfPtrs[i]->getWeight();
+		else weiPreSum[i] = weiPreSum[i - 1] + bxdfPtrs[i]->getWeight();
+	}
+	float randomValue = genRandomFloat() * weiPreSum.back();
+	int bxdf_index = 0;
+	while (bxdf_index < bxdfPtrs.size() && weiPreSum[bxdf_index] < randomValue) {
+		bxdf_index++;
+	}
+	return bxdfPtrs[bxdf_index]->sampleDir(wo, n);
 }

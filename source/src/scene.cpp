@@ -6,15 +6,6 @@
 #include "light.hpp"
 #include "scene.hpp"
 
-//#include <vtkSmartPointer.h>
-//#include <vtkRenderWindow.h>
-//#include <vtkRenderWindowInteractor.h>
-//#include <vtkRenderer.h>
-//#include <vtkImageData.h>
-//#include <vtkImageActor.h>
-//#include <vtkJPEGWriter.h>
-//#include <vtkSmartPointer.h>
-
 Scene::Scene(const string sceneDir, const string fileName)
 {
 	modelPtr = std::make_shared<Model>();
@@ -96,32 +87,6 @@ void Scene::render()
 	int ssp = 0;
 	auto start = std::chrono::high_resolution_clock::now();
 
-	//// 创建VTK创建渲染窗口
-	//vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
-	//if (renderWindow.GetPointer() == nullptr) {
-	//	std::cerr << "Render window is not initialized correctly." << std::endl;
-	//	return;
-	//}
-	//renderWindow->SetSize(w, h);
-	//// 创建渲染器
-	//vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
-	//if (renderer.GetPointer() == nullptr) {
-	//	std::cerr << "Renderer is not initialized correctly." << std::endl;
-	//	return;
-	//}
-	//renderWindow->AddRenderer(renderer);
-	//// 检查是否成功添加
-	//if (renderWindow->HasRenderer(renderer) == 0) {
-	//	std::cerr << "Renderer was not added to the render window." << std::endl;
-	//	return;
-	//}
-	//// 创建图像演员
-	//vtkSmartPointer<vtkImageActor> imageActor = vtkSmartPointer<vtkImageActor>::New();
-	//// 创建VTK图像数据对象
-	//vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
-	//imageData->SetDimensions(w, h, 1);
-	//imageData->AllocateScalars(VTK_UNSIGNED_CHAR, 3);
-
 	while (++ssp < maxNumSample) {
 #pragma omp parallel for
 		for (int i = 0; i < numPixels; i++)
@@ -132,20 +97,7 @@ void Scene::render()
 			// bvhPtr->intersection(ray, PayLoad{});
 			vec3 color = rayTracing(ray, PayLoad{}, 0);
 			filmPtr->addToPixel(x, y, color);
-
-			// 将颜色数据存储到VTK图像数据对象中
-			//unsigned char* ptr = static_cast<unsigned char*>(imageData->GetScalarPointer(x, y, 0));
-			//ptr[0] = static_cast<unsigned char>(color.r * 255);
-			//ptr[1] = static_cast<unsigned char>(color.g * 255);
-			//ptr[2] = static_cast<unsigned char>(color.b * 255);
 		}
-
-		//imageData->Modified(); // 通知VTK图像数据已更改
-		//// 设置图像演员的输入数据
-		//imageActor->SetInputData(imageData);
-		//renderer->AddActor(imageActor);
-		//renderWindow->Render();
-
 		if (ssp % numIter == 0) {
 			auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
 			cout << "Sample: " << ssp << " Elapsed time: " << duration.count() << " seconds" << endl;
@@ -183,7 +135,8 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 	if (depth >= maxDepth) return vec3(0);
 	// judge the first intersection
 	if (depth == 0 && !intersection(wo, currentPayload)) return vec3(0);
-	if (depth == 0 && currentPayload.meshPtr->matPtr->lightPtr) return currentPayload.meshPtr->matPtr->lightPtr->getRadiance();
+	if (depth == 0 && currentPayload.meshPtr->matPtr->lightPtr) 
+		return currentPayload.meshPtr->matPtr->lightPtr->getRadiance();
 
 	currentPayload.initBxDFs();
 	shared_ptr<BSDF> bsdfPtr = currentPayload.bsdfPtr;
@@ -214,20 +167,22 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 	vec3 indirectLight = vec3(0);
 	if (sampleBSDF) {
 		vec3 throughput = bsdfPtr->BSDFeval *
-			dot(bsdfPtr->wi_dir, currentPayload.normal) /
+			dot(bsdfPtr->wi, currentPayload.normal) /
 			bsdfPtr->BSDFpdf;
 		PayLoad nextPayLoad;
-		vec3 newOrigin = currentPayload.hitPos + currentPayload.normal * EPSILON;
-		bool nextHit = intersection(Ray(newOrigin, bsdfPtr->wi_dir), nextPayLoad);
+		vec3 origin = currentPayload.hitPos + currentPayload.normal * EPSILON;
+		bool nextHit = intersection(Ray(origin, bsdfPtr->wi), nextPayLoad);
 		if (nextHit) {
 			// add indirect light
 			shared_ptr<Light>lightPtr = nextPayLoad.meshPtr->matPtr->lightPtr;
 			if (lightPtr) {
 				indirectLight = throughput * lightPtr->getRadiance();
 				if (!bsdfPtr->perfectSpecular) {
-					vec3 dist = nextPayLoad.hitPos - newOrigin;
+					vec3 dist = nextPayLoad.hitPos - origin;
 					float cosTheta = dot(normalize(-dist), nextPayLoad.normal);
-					float lightPdf = dot(dist, dist) / cosTheta / modelPtr->calculateLightsArea();
+					float lightPdf = dot(dist, dist) / 
+						cosTheta / 
+						modelPtr->calculateLightsArea();
 					float scatWeight = powerHeuristic(bsdfPtr->BSDFpdf, lightPdf);
 					indirectLight *= scatWeight;
 				}
@@ -240,7 +195,8 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 					throughput /= rrThreshold;
 				}
 				// continue accumulate indirect light
-				indirectLight = throughput * rayTracing(Ray(currentPayload.hitPos, bsdfPtr->wi_dir), nextPayLoad, depth + 1);
+				indirectLight = throughput * 
+					rayTracing(Ray(currentPayload.hitPos, bsdfPtr->wi), nextPayLoad, depth + 1);
 			}
 		}
 	}
@@ -251,15 +207,14 @@ vec3 Scene::rayTest(const Ray& ray) const
 {
 	PayLoad currentpayload;
 	if (!intersection(ray, currentpayload)) return vec3(0);
-
 	shared_ptr<Material>matPtr = currentpayload.meshPtr->matPtr;
 	if (matPtr->lightPtr)
 		return matPtr->lightPtr->getRadiance();
-	float cos_theta = -dot(currentpayload.normal, ray.getDir());
+	float cosTheta = -dot(currentpayload.normal, ray.getDir());
 	vec2 texcoord = currentpayload.meshPtr->getTexCoord(currentpayload.uv);
 	vec3 diffuse = matPtr->getDiffuse(texcoord);
-	if (cos_theta < EPSILON) return vec3(0);
-	//return cos_theta * diffuse;
+	if (cosTheta < EPSILON) return vec3(0);
+	//return cosTheta * diffuse;
 	return currentpayload.normal;
 }
 
@@ -269,40 +224,38 @@ shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 
 	// select a light
 	shared_ptr<Light> lptr = modelPtr->randomSelectLight();
-
 	// select a point on the light
 	int meshIdx = genRandomFloat() * lptr->getMeshPtrs().size();
 	shared_ptr<Mesh> meshPtr = lptr->getMeshPtrs()[meshIdx];
-
 	// sample a point on the light
 	vec3 weights = samplerPtr->sampleWeight();
 	vec3 lightPos = meshPtr->vertices[0].pos * weights.x +
 		meshPtr->vertices[1].pos * weights.y +
 		meshPtr->vertices[2].pos * weights.z;
 
-	vec3 ws_dir = normalize(lightPos - payload.hitPos);
+	vec3 lightDir = normalize(lightPos - payload.hitPos);
 
 	//  the light in back face
-	if (dot(ws_dir, payload.normal) < EPSILON) return nullptr;
+	if (dot(lightDir, payload.normal) < EPSILON) return nullptr;
 
 	PayLoad lightPayload;
 
 	// judget the light point is visible
-	vec3 newOrigin = payload.hitPos + payload.normal * EPSILON;
-	bool isHit = intersection(Ray(newOrigin, ws_dir), lightPayload);
-	if (!isHit || dot(-ws_dir, lightPayload.normal) < EPSILON)
+	vec3 origin = payload.hitPos + payload.normal * EPSILON;
+	bool isHit = intersection(Ray(origin, lightDir), lightPayload);
+	if (!isHit || dot(-lightDir, lightPayload.normal) < EPSILON)
 		return nullptr;
-
 	float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
 	float lightDist = glm::length(payload.hitPos - lightPos);
 	if (fabs(hitDist - lightDist) > 0.01)
 		return nullptr;
 
 	float lightPdf = lightDist * lightDist /
-		(fabs(dot(lightPayload.normal, -ws_dir)) * modelPtr->calculateLightsArea());
+		fabs(dot(lightPayload.normal, -lightDir)) / 
+		modelPtr->calculateLightsArea();
 
 	samplerPtr->setPdf(lightPdf);
-	samplerPtr->setPos(ws_dir);
+	samplerPtr->setPos(lightDir);
 	samplerPtr->setMeshPtr(meshPtr);
 	samplerPtr->setPayloadPtr(std::make_shared<PayLoad>(lightPayload));
 	return samplerPtr;

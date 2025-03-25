@@ -31,24 +31,21 @@ void Film::saveToFile(const std::string fileName, int ssp) const
 	{
 		std::cout << "can not open file: " << fileName << std::endl;
 	}
-	outfile << "P6\n"
-		<< width << ' ' << height << "\n255\n";
-	const float gamma = 1.f / 2.2f;
+	outfile << "P6\n" << width << ' ' << height << "\n255\n";
+	const float gamma = 1.0f / 2.2f;
 	for (int y = 0; y < height; y++)
 	{
 		for (int x = 0; x < width; x++)
 		{
-			glm::vec3& color = static_cast <float>(1.0) / static_cast<float>(ssp) * getPixel(x, y);
-			// 如果颜色出现负值，说明计算有误
+			glm::vec3 color = getPixel(x, y) / static_cast<float>(ssp);
+			// check the color value
 			//if (color.x < 0.f || color.y < 0.f || color.z < 0.f) color = vec3(0, 0, 1);
 			//if (color.x > 1.f || color.y > 1.f || color.z > 1.f) color = vec3(1, 0, 0);
 			//if (color.x != color.x || color.y != color.y || color.z != color.z) color = vec3(0, 1, 0);
-			color = glm::clamp(color, 0.f, 1.f);
-			color = glm::pow(color, glm::vec3(gamma));
-			color *= 255.99f;
+			color = glm::pow(glm::clamp(color, 0.f, 1.f), glm::vec3(gamma)) * 255.99f;
 			outfile << static_cast<uint8_t>(color.x)
-				<< static_cast<uint8_t>(color.y)
-				<< static_cast<uint8_t>(color.z);
+					<< static_cast<uint8_t>(color.y)
+					<< static_cast<uint8_t>(color.z);
 		}
 	}
 	outfile.close();

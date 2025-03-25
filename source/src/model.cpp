@@ -14,7 +14,7 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 	vec3 E1 = v1 - v0;
 	vec3 E2 = v2 - v0;
 	vec3 N = cross(E1, E2);
-	// 检查光线是否与三角形平行
+	// check the ray is parallel to the triangle
 	if (dot(N, -ray.getDir()) < EPSILON) return isHit;
 	vec3 T = ray.getOrigin() - v0;
 	vec3 D = normalize(ray.getDir());
@@ -33,8 +33,6 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 		payload.hitPos = ray.at(t);
 		payload.uv = { u, v };
 		payload.normal = normalize(getNormal({ u, v }));
-		// bathroom2模型中的法向量有问题
-		//if (dot(payload.normal, ray.getDir()) > 0) payload.normal = -payload.normal;
 	}
 	return isHit;
 }

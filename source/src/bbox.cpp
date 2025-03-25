@@ -25,6 +25,7 @@ bool BBox::intersection(const Ray& ray) const
 
 	vec3 t1 = glm::min(tmin, tmax);
 	vec3 t2 = glm::max(tmin, tmax);
+
 	float tNear = glm::max(t1.x, glm::max(t1.y, t1.z));
 	float tFar = glm::min(t2.x, glm::min(t2.y, t2.z));
 

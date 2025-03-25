@@ -19,10 +19,7 @@ vec3 Texture::value(const vec2 &texCoord) const
 	int y = static_cast<int>(v * height);
 	int offset = (y * width + x) * channels;
 	offset = glm::clamp(offset, 0, width * height * channels - 3);
-	float r = data[offset];
-	float g = data[offset + 1];
-	float b = data[offset + 2];
-	return vec3(r, g, b);
+	return vec3(data[offset], data[offset + 1], data[offset + 2]);
 }
 
 vec3 Material::getDiffuse(const vec2& texcoord) const

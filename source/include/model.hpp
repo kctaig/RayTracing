@@ -47,7 +47,7 @@ public:
 	vector<shared_ptr<Mesh>>& getMeshPtrs() { return meshPtrs; }
 	const vector<shared_ptr<Mesh>>& getMeshPtrs() const { return meshPtrs; }
 
-	void addLight(shared_ptr<Light> l) { lightPtrs.push_back(l); }
+	void addLight(shared_ptr<Light> light) { lightPtrs.push_back(light); }
 
 	shared_ptr<Light> randomSelectLight() const;
 

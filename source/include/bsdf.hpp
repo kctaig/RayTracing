@@ -17,9 +17,9 @@ protected:
 	float weight;
 };
 
-class LambertianBRDF : public BxDF {
+class LambertianDiffuseBRDF : public BxDF {
 public:
-	LambertianBRDF(const vec3& kd) :BxDF(kd) {}
+	LambertianDiffuseBRDF(const vec3& kd) :BxDF(kd) {}
 	virtual float pdf(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const override;
 	virtual vec3 sampleDir(const vec3& wo, const vec3& n) const override;
@@ -45,14 +45,15 @@ public:
 
 class BSDF {
 public:
-	void generateWeight();
+	void generateBSDFWeight();
 	bool sampleBSDF(const vec3& wo, const vec3& n);
 	vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const;
 	float pdf(const vec3& wo, const vec3& wi, const vec3& n) const;
+	vec3 sampelDir(const vec3& wo, const vec3& n) const;
 
 	bool perfectSpecular;
 	float BSDFpdf;
 	vec3 BSDFeval;
-	vec3 wi_dir;
+	vec3 wi;
 	vector<shared_ptr<BxDF>> bxdfPtrs;
 };

@@ -31,16 +31,16 @@ BVH::BVH(const vector<shared_ptr<Mesh>>& meshptrs)
 int BVH::selectAxis() const
 {
 	int axis = 0;
-	float max_length = bboxPtr->getMax().x - bboxPtr->getMin().x;
-	if (bboxPtr->getMax().y - bboxPtr->getMin().y > max_length)
+	float maxLength = bboxPtr->getMax().x - bboxPtr->getMin().x;
+	if (bboxPtr->getMax().y - bboxPtr->getMin().y > maxLength)
 	{
 		axis = 1;
-		max_length = bboxPtr->getMax().y - bboxPtr->getMin().y;
+		maxLength = bboxPtr->getMax().y - bboxPtr->getMin().y;
 	}
-	if (bboxPtr->getMax().z - bboxPtr->getMin().z > max_length)
+	if (bboxPtr->getMax().z - bboxPtr->getMin().z > maxLength)
 	{
 		axis = 2;
-		max_length = bboxPtr->getMax().z - bboxPtr->getMin().z;
+		maxLength = bboxPtr->getMax().z - bboxPtr->getMin().z;
 	}
 	return axis;
 }
@@ -50,7 +50,6 @@ bool BVH::intersection(const Ray& ray, PayLoad& payload)
 	if (!bboxPtr->intersection(ray)) return false;
 
 	bool isHit = false;
-
 	if (!left && !right) {
 		for (auto& meshptr : meshPtrs) {
 			if (meshptr->intersection(ray, payload)) {
@@ -65,7 +64,6 @@ bool BVH::intersection(const Ray& ray, PayLoad& payload)
 		if (right && right->intersection(ray, payload))
 			isHit = true;
 	}
-
 	return isHit;
 
 	//std::stack<BVH*> stack;
