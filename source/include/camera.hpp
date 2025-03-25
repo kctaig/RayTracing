@@ -9,7 +9,7 @@ class Camera
 public:
 	Camera() = default;
 
-	Camera(vec3 e, vec3 l, vec3 u, float fovy = 90.f) : eye(e), lookat(l), up(u), fovy(fovy) {};
+	Camera(vec3 e, vec3 l, vec3 u, float fovy) : eye(e), lookat(l), up(u), fovy(fovy) {};
 	Ray rayCasting(const shared_ptr<Film>filmPtr, const glm::ivec2& pixelCoord) const;
 
 private:

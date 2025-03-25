@@ -213,13 +213,12 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 	// sample BSDF
 	vec3 indirectLight = vec3(0);
 	if (sampleBSDF) {
-		vec3 wi_dir = currentPayload.bsdfPtr->wi_dir;
 		vec3 throughput = bsdfPtr->BSDFeval *
-			dot(wi_dir, currentPayload.normal) /
+			dot(bsdfPtr->wi_dir, currentPayload.normal) /
 			bsdfPtr->BSDFpdf;
 		PayLoad nextPayLoad;
 		vec3 newOrigin = currentPayload.hitPos + currentPayload.normal * EPSILON;
-		bool nextHit = intersection(Ray(newOrigin, wi_dir), nextPayLoad);
+		bool nextHit = intersection(Ray(newOrigin, bsdfPtr->wi_dir), nextPayLoad);
 		if (nextHit) {
 			// add indirect light
 			shared_ptr<Light>lightPtr = nextPayLoad.meshPtr->matPtr->lightPtr;
@@ -228,11 +227,7 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 				if (!bsdfPtr->perfectSpecular) {
 					vec3 dist = nextPayLoad.hitPos - newOrigin;
 					float cosTheta = dot(normalize(-dist), nextPayLoad.normal);
-					float lightArea = 0.f;
-					for (shared_ptr<Light> lightPtr : modelPtr->getLightPtrs()) {
-						lightArea += lightPtr->getArea();
-					}
-					float lightPdf = dot(dist, dist) / cosTheta / lightArea;
+					float lightPdf = dot(dist, dist) / cosTheta / modelPtr->calculateLightsArea();
 					float scatWeight = powerHeuristic(bsdfPtr->BSDFpdf, lightPdf);
 					indirectLight *= scatWeight;
 				}
@@ -240,13 +235,12 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 			else {
 				// Russian Roulette
 				if (depth >= 3) {
-					if (genRandomFloat() > rrThreshold) {
+					if (genRandomFloat() > rrThreshold)
 						return directLight;
-					}
 					throughput /= rrThreshold;
 				}
 				// continue accumulate indirect light
-				indirectLight = throughput * rayTracing(Ray(currentPayload.hitPos, wi_dir), nextPayLoad, depth + 1);
+				indirectLight = throughput * rayTracing(Ray(currentPayload.hitPos, bsdfPtr->wi_dir), nextPayLoad, depth + 1);
 			}
 		}
 	}
@@ -272,22 +266,13 @@ vec3 Scene::rayTest(const Ray& ray) const
 shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 {
 	shared_ptr<Sampler> samplerPtr = std::make_shared<Sampler>();
-	vector<shared_ptr<Light>> lptrs = modelPtr->getLightPtrs();
+
 	// select a light
-	vector<float>areaPreSum(lptrs.size());
-	for (int i = 0; i < lptrs.size(); i++)
-	{
-		areaPreSum[i] = lptrs[i]->getArea();
-		if (i > 0) areaPreSum[i] += areaPreSum[i - 1];
-	}
-	float randomValue = genRandomFloat() * areaPreSum.back();
-	int light_id = 0;
-	while (light_id < lptrs.size() && randomValue > areaPreSum[light_id]) light_id++;
-	shared_ptr<Light> lptr = lptrs[light_id];
+	shared_ptr<Light> lptr = modelPtr->randomSelectLight();
 
 	// select a point on the light
-	int mesh_id = genRandomFloat() * lptr->getMeshPtrs().size();
-	shared_ptr<Mesh> meshPtr = lptr->getMeshPtrs()[mesh_id];
+	int meshIdx = genRandomFloat() * lptr->getMeshPtrs().size();
+	shared_ptr<Mesh> meshPtr = lptr->getMeshPtrs()[meshIdx];
 
 	// sample a point on the light
 	vec3 weights = samplerPtr->sampleWeight();
@@ -314,7 +299,7 @@ shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 		return nullptr;
 
 	float lightPdf = lightDist * lightDist /
-		(fabs(dot(lightPayload.normal, -ws_dir)) * areaPreSum.back());
+		(fabs(dot(lightPayload.normal, -ws_dir)) * modelPtr->calculateLightsArea());
 
 	samplerPtr->setPdf(lightPdf);
 	samplerPtr->setPos(ws_dir);

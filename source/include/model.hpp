@@ -26,8 +26,8 @@ public:
 	bool intersection(const Ray& ray, PayLoad& payload) const;
 	float calculateArea();
 
-	const vec2 getTexCoord(const vec2 &uv) const;
-	const vec3 getNormal(const vec2 &uv) const;
+	const vec2 getTexCoord(const vec2& uv) const;
+	const vec3 getNormal(const vec2& uv) const;
 	
 	vector<Vertex> vertices;
 	shared_ptr<BBox> bboxPtr;
@@ -48,6 +48,10 @@ public:
 	const vector<shared_ptr<Mesh>>& getMeshPtrs() const { return meshPtrs; }
 
 	void addLight(shared_ptr<Light> l) { lightPtrs.push_back(l); }
+
+	shared_ptr<Light> randomSelectLight() const;
+
+	float calculateLightsArea() const;
 
 private:
 	vector<shared_ptr<Mesh>> meshPtrs;

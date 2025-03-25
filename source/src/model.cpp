@@ -180,3 +180,28 @@ void Model::loadFromFile(const string fileDir, const string fileName)
 	cout << "Faces: " << meshPtrs.size() << endl;
 	cout << "Model Build Time: " << duration.count() << " seconds" << endl;
 }
+
+shared_ptr<Light> Model::randomSelectLight() const
+{
+	vector<float>areaPreSum(lightPtrs.size());
+	for (int i = 0; i < lightPtrs.size(); i++)
+	{
+		areaPreSum[i] = lightPtrs[i]->getArea();
+		if (i > 0) areaPreSum[i] += areaPreSum[i - 1];
+	}
+	float randomValue = genRandomFloat() * areaPreSum.back();
+	int lightIdx = 0;
+	while (lightIdx < lightPtrs.size() && randomValue > areaPreSum[lightIdx]) {
+		lightIdx++;
+	}
+	return lightPtrs[lightIdx];
+}
+
+float Model::calculateLightsArea() const
+{
+	float lightsArea = 0.f;
+	for (shared_ptr<Light> lightPtr : lightPtrs) {
+		lightsArea += lightPtr->getArea();
+	}
+	return lightsArea;
+}
