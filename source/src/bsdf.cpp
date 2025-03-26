@@ -83,8 +83,9 @@ void BSDF::generateBSDFWeight()
 	vector<float> luminances;
 	for (shared_ptr<BxDF>& bxdfPtr : bxdfPtrs) {
 		float luminance = dot(bxdfPtr->getRadiance(), cie1931Weights);
-		sum += luminance;
-		luminances.push_back(luminance);
+		float weight = pow(luminance, 1.0f);
+		sum += weight;
+		luminances.push_back(weight);
 	}
 	if (sum == 0.f) return;
 	for (int i = 0; i < luminances.size(); i++) {
