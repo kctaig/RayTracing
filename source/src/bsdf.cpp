@@ -2,7 +2,7 @@
 
 float LambertianDiffuseBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	return dot(n, wi) / M_PI;
+	return abs(dot(n, wi)) / M_PI;
 }
 
 vec3 LambertianDiffuseBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
@@ -12,12 +12,31 @@ vec3 LambertianDiffuseBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) 
 
 vec3 LambertianDiffuseBRDF::sampleDir(const vec3& wo, const vec3& n) const
 {
-	float u = genRandomFloat();
-	float v = genRandomFloat();
-	float z = std::fabs(1.0f - 2.0f * u);
-	float r = std::sqrt(1.0f - z * z);
-	float phi = 2.0f * M_PI * v;
-	vec3 localDir = vec3(r * cos(phi), r * sin(phi), z);
+	//float u = genRandomFloat();
+	//float v = genRandomFloat();
+	//// float z = std::fabs(1.0f - 2.0f * u);
+	//float z = std::sqrt(1- u * u);
+	//float r = std::sqrt(1.0f - z * z);
+	//float phi = 2.0f * M_PI * v;
+	//vec3 localDir = vec3(r * cos(phi), r * sin(phi), z);
+	//return toWorld(localDir, n);
+
+	vec2 disk;
+	vec2 offset = 2.f * vec2(genRandomFloat(), genRandomFloat()) - vec2(1, 1);
+	if (offset.x == 0 && offset.y == 0)  disk = vec2(0);
+	float theta, r;
+	if (abs(offset.x) > abs(offset.y)) {
+		r = offset.x;
+		theta = M_PI / 4.f * (offset.y / offset.x);
+	}
+	else {
+		r = offset.y;
+		theta = M_PI / 2.f - M_PI / 4.f * (offset.x / offset.y);
+	}
+	disk =  r * vec2(cos(theta), sin(theta));
+	float z = sqrt(1 - disk.x * disk.x - disk.y * disk.y);
+	if (z < 0.f) z = -z;
+	vec3 localDir = vec3(disk.x, disk.y, z);
 	return toWorld(localDir, n);
 }
 
