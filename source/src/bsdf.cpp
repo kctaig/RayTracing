@@ -24,6 +24,7 @@ vec3 LambertianDiffuseBRDF::sampleDir(const vec3& wo, const vec3& n) const
 	//vec3 localDir = vec3(r * cos(phi), r * sin(phi), z);
 	//return toWorld(localDir, n);
 
+	// reference to PBRT
 	vec2 disk;
 	vec2 offset = 2.f * vec2(genRandomFloat(), genRandomFloat()) - vec2(1, 1);
 	if (offset.x == 0 && offset.y == 0)  disk = vec2(0);

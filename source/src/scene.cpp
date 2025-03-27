@@ -154,11 +154,11 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 			if (lightWeight > EPSILON) {
 				vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
 				vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
-				directLight = LightEmission *
-					lightEval *
-					lightWeight *
-					dot(lightDir, currentPayload.normal) /
-					lightPdf;
+				directLight = LightEmission 
+					* lightEval 
+					* lightWeight 
+					* dot(lightDir, currentPayload.normal) 
+					/ lightPdf;
 			}
 		}
 	}
@@ -166,9 +166,9 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 	// sample BSDF
 	vec3 indirectLight = vec3(0);
 	if (sampleBSDF) {
-		vec3 throughput = bsdfPtr->BSDFeval *
-			dot(bsdfPtr->wi, currentPayload.normal) /
-			bsdfPtr->BSDFpdf;
+		vec3 throughput = bsdfPtr->BSDFeval 
+			* dot(bsdfPtr->wi, currentPayload.normal) 
+			/ bsdfPtr->BSDFpdf;
 		PayLoad nextPayLoad;
 		vec3 origin = currentPayload.hitPos + currentPayload.normal * EPSILON;
 		bool nextHit = intersection(Ray(origin, bsdfPtr->wi), nextPayLoad);
@@ -180,9 +180,9 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 				if (!bsdfPtr->perfectSpecular) {
 					vec3 dist = nextPayLoad.hitPos - origin;
 					float cosTheta = dot(normalize(-dist), nextPayLoad.normal);
-					float lightPdf = dot(dist, dist) / 
-						cosTheta / 
-						modelPtr->calculateLightsArea();
+					float lightPdf = dot(dist, dist) 
+						/ cosTheta 
+						/ modelPtr->calculateLightsArea();
 					float scatWeight = powerHeuristic(bsdfPtr->BSDFpdf, lightPdf);
 					indirectLight *= scatWeight;
 				}
@@ -195,8 +195,8 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 					throughput /= rrThreshold;
 				}
 				// continue accumulate indirect light
-				indirectLight = throughput * 
-					rayTracing(Ray(currentPayload.hitPos, bsdfPtr->wi), nextPayLoad, depth + 1);
+				indirectLight = throughput 
+					* rayTracing(Ray(currentPayload.hitPos, bsdfPtr->wi), nextPayLoad, depth + 1);
 			}
 		}
 	}
