@@ -13,9 +13,9 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 	vec3 v2 = vertices[2].pos;
 	vec3 E1 = v1 - v0;
 	vec3 E2 = v2 - v0;
-	vec3 N = cross(E1, E2);
 	// check the ray is parallel to the triangle
-	if (dot(N, -ray.getDir()) < EPSILON) return isHit;
+	vec3 N = cross(E1, E2);
+	if (fabs(dot(N, -ray.getDir())) < EPSILON) return isHit;
 	vec3 T = ray.getOrigin() - v0;
 	vec3 D = normalize(ray.getDir());
 	vec3 P = cross(D, E2);
@@ -26,13 +26,14 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 	float u = dot(P, T) / p_e1;
 	float v = dot(Q, D) / p_e1;
 
-	if (t >= 0.f && t < payload.t && u >= 0 && v >= 0 && 1 - u - v >= 0)
+	if (t > 0.01f && t < payload.t && u >= 0 && v >= 0 && 1 - u - v >= 0)
 	{
 		isHit = true;
 		payload.t = t;
 		payload.hitPos = ray.at(t);
 		payload.uv = { u, v };
-		payload.normal = normalize(getNormal({ u, v }));
+		vec3 n = normalize(getNormal({ u, v }));
+		payload.normal = dot(n, D) < 0.f ? n : -n;
 	}
 	return isHit;
 }
