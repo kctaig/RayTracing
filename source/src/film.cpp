@@ -41,7 +41,7 @@ void Film::saveToFile(const std::string fileName, int ssp) const
 			// check the color value
 			//if (color.x < 0.f || color.y < 0.f || color.z < 0.f) color = vec3(0, 0, 1);
 			//if (color.x > 1.f || color.y > 1.f || color.z > 1.f) color = vec3(1, 0, 0);
-			//if (color.x != color.x || color.y != color.y || color.z != color.z) color = vec3(0, 1, 0);
+			//if (isNAN(color)) color = vec3(0, 1, 0);
 			color = glm::pow(glm::clamp(color, 0.f, 1.f), glm::vec3(gamma)) * 255.99f;
 			outfile << static_cast<uint8_t>(color.x)
 					<< static_cast<uint8_t>(color.y)

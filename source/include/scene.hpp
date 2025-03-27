@@ -14,8 +14,9 @@ public:
 
 	Scene(const string fileDir, string fileName);
 
-	// 未使用加速结构
+	// loop intersection
 	bool iterIntersection(const Ray& ray, PayLoad& payload) const;
+	// bvh intersection
 	bool intersection(const Ray& ray, PayLoad& payload) const;
 	vec3 rayTracing(const Ray& ray, PayLoad& currentPayload, int depth);
 

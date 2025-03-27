@@ -8,9 +8,9 @@
 
 bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 	bool isHit = false;
-	vec3 v0 = vertices[0].pos;
-	vec3 v1 = vertices[1].pos;
-	vec3 v2 = vertices[2].pos;
+	const vec3 &v0 = vertices[0].pos;
+	const vec3 &v1 = vertices[1].pos;
+	const vec3 &v2 = vertices[2].pos;
 	vec3 E1 = v1 - v0;
 	vec3 E2 = v2 - v0;
 	// check the ray is parallel to the triangle
@@ -32,6 +32,7 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 		payload.t = t;
 		payload.hitPos = ray.at(t);
 		payload.uv = { u, v };
+		// set out normal
 		vec3 n = normalize(getNormal({ u, v }));
 		payload.normal = dot(n, D) < 0.f ? n : -n;
 	}
@@ -40,9 +41,9 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
 
 float Mesh::calculateArea()
 {
-	vec3 v0 = vertices[0].pos;
-	vec3 v1 = vertices[1].pos;
-	vec3 v2 = vertices[2].pos;
+	const vec3 &v0 = vertices[0].pos;
+	const vec3 &v1 = vertices[1].pos;
+	const vec3 &v2 = vertices[2].pos;
 	vec3 E1 = v1 - v0;
 	vec3 E2 = v2 - v0;
 	return length(cross(E1, E2)) / 2.0f;
@@ -83,9 +84,9 @@ void Model::loadFromFile(const string fileDir, const string fileName)
 		cout << "TinyObshapesjReader: " << reader.Warning();
 	}
 
-	auto& attrib = reader.GetAttrib();
-	auto& shapes = reader.GetShapes();
-	auto& materials = reader.GetMaterials();
+	const auto& attrib = reader.GetAttrib();
+	const auto& shapes = reader.GetShapes();
+	const auto& materials = reader.GetMaterials();
 
 	matPtrs.resize(materials.size());
 	for (size_t i = 0; i < materials.size(); i++)
@@ -169,15 +170,14 @@ void Model::loadFromFile(const string fileDir, const string fileName)
 				lightPtr->getMeshPtrs().push_back(meshPtr);
 				lightPtr->addArea(meshPtr->calculateArea());
 			}
-
 			meshPtrs.push_back(meshPtr);
 			mesh_vertex_offset += each_mesh_vertex_num;
 		}
 	}
 	auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start);
-	cout << "Vertices: " << attrib.vertices.size() << endl;
-	cout << "Faces: " << meshPtrs.size() << endl;
-	cout << "Model Build Time: " << duration.count() << " seconds" << endl;
+	cout << "Vertices: " << attrib.vertices.size() << endl
+			<< "Faces: " << meshPtrs.size() << endl 
+			<< "Model Build Time: " << duration.count() << " seconds" << endl;
 }
 
 shared_ptr<Light> Model::randomSelectLight() const

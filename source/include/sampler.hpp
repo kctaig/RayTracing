@@ -9,10 +9,11 @@ public:
 
 	Sampler(float p, vec3 pos, shared_ptr<Mesh> m) : pdf(p), dir(pos), meshPtr(m) {}
 
-	vec3 sampleWeight() const;
+	// sample a weight on a mesh
+	vec3 weightSamplingOnMesh() const;
 
-	void setPdf(float p) { pdf = p; }
-	void setPos(vec3 p) { dir = p; }
+	void setPdf(const float &p) { pdf = p; }
+	void setPos(const vec3 &p) { dir = p; }
 	void setMeshPtr(shared_ptr<Mesh> m) { meshPtr = m; }
 	void setPayloadPtr(shared_ptr<PayLoad> p) { payloadPtr = p; }
 

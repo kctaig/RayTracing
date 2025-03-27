@@ -150,10 +150,10 @@ vec3 Scene::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 		if (lightSamplerPtr) {
 			float lightPdf = lightSamplerPtr->getPdf();
 			vec3 lightDir = lightSamplerPtr->getDir();
-			float lightWeight = powerHeuristic(lightPdf, bsdfPtr->pdf(wo.getDir(), lightDir, currentPayload.normal));
+			float lightWeight = powerHeuristic(lightPdf, bsdfPtr->accPdf(wo.getDir(), lightDir, currentPayload.normal));
 			if (lightWeight > EPSILON) {
 				vec3 LightEmission = lightSamplerPtr->getMeshPtr()->matPtr->lightPtr->getRadiance();
-				vec3 lightEval = bsdfPtr->eval(wo.getDir(), lightDir, currentPayload.normal);
+				vec3 lightEval = bsdfPtr->accEval(wo.getDir(), lightDir, currentPayload.normal);
 				directLight = LightEmission 
 					* lightEval 
 					* lightWeight 
@@ -225,10 +225,10 @@ shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 	// select a light
 	shared_ptr<Light> lptr = modelPtr->randomSelectLight();
 	// select a point on the light
-	int meshIdx = genRandomFloat() * lptr->getMeshPtrs().size();
+	int meshIdx = static_cast<int>(genRandomFloat() * lptr->getMeshPtrs().size());
 	shared_ptr<Mesh> meshPtr = lptr->getMeshPtrs()[meshIdx];
 	// sample a point on the light
-	vec3 weights = samplerPtr->sampleWeight();
+	vec3 weights = samplerPtr->weightSamplingOnMesh();
 	vec3 lightPos = meshPtr->vertices[0].pos * weights.x +
 		meshPtr->vertices[1].pos * weights.y +
 		meshPtr->vertices[2].pos * weights.z;

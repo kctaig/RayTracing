@@ -66,26 +66,30 @@ bool BVH::intersection(const Ray& ray, PayLoad& payload)
 	}
 	return isHit;
 
-	//std::stack<BVH*> stack;
-	//stack.push(this);
-	//float rec_t = payload.t;
-	//bool isHit = false;
-	//while (!stack.empty()) {
-	//	auto current = stack.top();
-	//	stack.pop();
-	//	if (!current->bboxPtr->intersection(ray)) continue;
-	//	if (!current->left && !current->right) {
-	//		// 叶子节点：检查所有网格
-	//		for (auto& meshptr : current->meshPtrs) {
-	//			if (meshptr->intersection(ray, payload))
-	//				isHit = true;
-	//		}
-	//	}
-	//	else {
-	//		// 非叶子节点：将左右子树压入栈
-	//		if (current->left) stack.push(current->left.get());
-	//		if (current->right) stack.push(current->right.get());
-	//	}
-	//}
-	//return isHit;
+	/*
+	// also works but slower (recursive version)
+	std::stack<BVH*> stack;
+	stack.push(this);
+	float rec_t = payload.t;
+	bool isHit = false;
+	while (!stack.empty()) {
+		auto current = stack.top();
+		stack.pop();
+		if (!current->bboxPtr->intersection(ray)) continue;
+		if (!current->left && !current->right) {
+			// 叶子节点：检查所有网格
+			for (auto& meshptr : current->meshPtrs) {
+				if (meshptr->intersection(ray, payload))
+					isHit = true;
+			}
+		}
+		else {
+			// 非叶子节点：将左右子树压入栈
+			if (current->left) stack.push(current->left.get());
+			if (current->right) stack.push(current->right.get());
+		}
+	}
+	return isHit;
+	*/
+
 }

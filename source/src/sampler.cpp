@@ -1,6 +1,6 @@
 #include "sampler.hpp"
 
-vec3 Sampler::sampleWeight() const
+vec3 Sampler::weightSamplingOnMesh() const
 {
 	float r1 = genRandomFloat(), r2 = genRandomFloat();
 	if (r1 + r2 > 1.f) {

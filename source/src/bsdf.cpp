@@ -4,7 +4,7 @@ float LambertianDiffuseBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) 
 {
 	if (dot(n, wi) < 0.f) return 0.f;
 	//return dot(n, wi) / M_PI;
-	return 1.0 / M_PI;
+	return 1.0f / M_PI;
 
 }
 
@@ -115,14 +115,14 @@ void BSDF::generateBSDFWeight()
 bool BSDF::sampleBSDF(const vec3& wo, const vec3& n)
 {
 	if (bxdfPtrs.empty()) return false;
-	wi = sampelDir(wo, n);
-	BSDFeval = eval(wo, wi, n);
-	BSDFpdf = pdf(wo, wi, n);
+	wi = selectDir(wo, n);
+	BSDFeval = accEval(wo, wi, n);
+	BSDFpdf = accPdf(wo, wi, n);
 	if (BSDFpdf < EPSILON) return false;
 	return true;
 }
 
-vec3 BSDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
+vec3 BSDF::accEval(const vec3& wo, const vec3& wi, const vec3& n) const
 {
 	vec3 res = vec3(0);
 	for (shared_ptr<BxDF> bxdfPtr : bxdfPtrs) {
@@ -131,7 +131,7 @@ vec3 BSDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
 	return res;
 }
 
-float BSDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
+float BSDF::accPdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
 	float res = 0.f;
 	for (shared_ptr<BxDF> bxdfPtr : bxdfPtrs) {
@@ -140,7 +140,7 @@ float BSDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 	return res;
 }
 
-vec3 BSDF::sampelDir(const vec3& wo, const vec3& n) const
+vec3 BSDF::selectDir(const vec3& wo, const vec3& n) const
 {
 	std::vector<float> weiPreSum(bxdfPtrs.size());
 	for (int i = 0; i < bxdfPtrs.size(); i++)

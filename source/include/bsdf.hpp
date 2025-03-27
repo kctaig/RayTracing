@@ -47,9 +47,9 @@ class BSDF {
 public:
 	void generateBSDFWeight();
 	bool sampleBSDF(const vec3& wo, const vec3& n);
-	vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const;
-	float pdf(const vec3& wo, const vec3& wi, const vec3& n) const;
-	vec3 sampelDir(const vec3& wo, const vec3& n) const;
+	vec3 accEval(const vec3& wo, const vec3& wi, const vec3& n) const;
+	float accPdf(const vec3& wo, const vec3& wi, const vec3& n) const;
+	vec3 selectDir(const vec3& wo, const vec3& n) const;
 
 	bool perfectSpecular;
 	float BSDFpdf;
