@@ -46,12 +46,17 @@ static vec3 toWorld(const vec3& localDir, const vec3& n) {
 	}
 	vec3 tangent = normalize(cross(n, arbitrary));
 	vec3 bitangent = normalize(cross(n, tangent));
-	return localDir.x * tangent + localDir.y * bitangent + localDir.z * n;
+	vec3 worldDir = localDir.x * tangent + localDir.y * bitangent + localDir.z * n;
+	return normalize(worldDir);
 }
 
 static float powerHeuristic(float pdf1, float pdf2)
 {
 	float f1 = pdf1 * pdf1;
 	float f2 = pdf2 * pdf2;
-	return f1 + f2 == 0.f ? 0.f : f1 / (f1 + f2);
+	return (f1 + f2) == 0.f ? 0.f : f1 / (f1 + f2);
+}
+
+static bool isNAN(const vec3& v) {
+	return v.x != v.x || v.y != v.y || v.z != v.z;
 }

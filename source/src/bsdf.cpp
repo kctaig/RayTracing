@@ -2,7 +2,10 @@
 
 float LambertianDiffuseBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
-	return abs(dot(n, wi)) / M_PI;
+	if (dot(n, wi) < 0.f) return 0.f;
+	//return dot(n, wi) / M_PI;
+	return 1.0 / M_PI;
+
 }
 
 vec3 LambertianDiffuseBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const
@@ -35,13 +38,13 @@ vec3 LambertianDiffuseBRDF::sampleDir(const vec3& wo, const vec3& n) const
 	}
 	disk =  r * vec2(cos(theta), sin(theta));
 	float z = sqrt(1 - disk.x * disk.x - disk.y * disk.y);
-	if (z < 0.f) z = -z;
 	vec3 localDir = vec3(disk.x, disk.y, z);
 	return toWorld(localDir, n);
 }
 
 float PhongSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
+	if (dot(n, wi) < 0.f) return 0.f;
 	vec3 h = normalize(wi - wo);
 	float nh = dot(n, h);
 	return (alpha + 1.0f) * pow(nh, alpha) / (2.0f * M_PI);
@@ -60,26 +63,22 @@ vec3 PhongSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const
 {
 	float u = genRandomFloat();
 	float v = genRandomFloat();
-
 	float phi = 2.0f * M_PI * u;
 	float cosTheta = pow(v, 1.0f / (alpha + 1.0f));
 	float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
-
 	vec3 h = vec3(
 		sinTheta * cos(phi),
 		sinTheta * sin(phi),
 		cosTheta
 	);
-
 	h = toWorld(h, n);
-
 	vec3 wi = wo - 2.0f * dot(wo, h) * h;
-
-	return wi;
+	return normalize(wi);
 }
 
 float MirrorSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const
 {
+	if (dot(wi, n) < 0.f) return 0.f;
 	return 1.0f;
 }
 
@@ -116,12 +115,9 @@ bool BSDF::sampleBSDF(const vec3& wo, const vec3& n)
 {
 	if (bxdfPtrs.empty()) return false;
 	wi = sampelDir(wo, n);
-	// judge the wi_dir is valid or not
-	if (dot(wi, n) < EPSILON) {
-		return false;
-	}
 	BSDFeval = eval(wo, wi, n);
 	BSDFpdf = pdf(wo, wi, n);
+	if (BSDFpdf < EPSILON) return false;
 	return true;
 }
 
