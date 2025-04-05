@@ -18,7 +18,7 @@
 ![alt text](output/veach-mis_1000.png)
 ### Bathroom2
 由于模型的差异（视口后面的面片未被删除）有些比起原图会看起来更亮，由于模型法向量并不是向外的，因此代码中求交时会将交点的法线向外。
-output/bathroom2_1000.pn
+![alt text](output/bathroom2_1000.png)
 
 ## 光传输渲染方程
 ### 渲染方程原理
