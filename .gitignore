@@ -9,4 +9,6 @@
 /cmake-build
 CMakeSettings.json
 /example-scenes-cg24
-/output
+/output/bathroom2
+/output/cornell-box
+/output/veach-mis
