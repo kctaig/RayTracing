@@ -1,0 +1,4 @@
+example-scenes-cg24/bathroom2/*.mb filter=lfs diff=lfs merge=lfs -text
+example-scenes-cg24/bathroom2/*.obj filter=lfs diff=lfs merge=lfs -text
+example-scenes-cg24/bathroom2/bathroom2.mb filter=lfs diff=lfs merge=lfs -text
+example-scenes-cg24/bathroom2/bathroom2.obj filter=lfs diff=lfs merge=lfs -text
