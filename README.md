@@ -13,12 +13,12 @@
 ## 结果展示
 最大弹射次数：5
 ### Cornell-Box
-![alt text](output/cornell-box_100.png)
+![alt text](assets/cornell-box_100.png)
 ### Veach-vis
-![alt text](output/veach-mis_1000.png)
+![alt text](assets/veach-mis_1000.png)
 ### Bathroom2
 由于模型的差异（视口后面的面片未被删除）有些比起原图会看起来更亮，由于模型法向量并不是向外的，因此代码中求交时会将交点的法线向外。
-![alt text](output/bathroom2_1000.png)
+![alt text](assets/bathroom2_1000.png)
 
 ## 光传输渲染方程
 ### 渲染方程原理
@@ -27,9 +27,13 @@
 ### 方程表达
 在光传输渲染方程中，我们使用 $\omega_o$ 和 $\omega_i$ 来表示方向，其中 $\omega_o$ 表示出射方向（观察方向），而 $\omega_i$ 表示入射方向。其描述了在点 $p$ 处，沿出射方向 $\omega_o$ 的总辐射亮度是由自发光和反射光组成的。反射光部分是通过积分计算所有入射方向 $\omega_i$ 的贡献，每个方向的贡献由入射辐射亮度、反射率函数和入射角的余弦值决定。以下是使用这些符号的渲染方程：
 
-$$
+<!-- $$
 L_o(p, \omega_o) = L_e(p, \omega_o) + \int_{\Omega} f_r(p, \omega_i, \omega_o) L_i(p, \omega_i) (\omega_i \cdot n) \, d\omega_i\tag{1}
-$$
+$$ -->
+
+<p align="center">
+  <img src="assets/RenderingEquation.png" alt="Rendering Equation">
+</p>
 
 其中：
 - $L_o(p, \omega_o)$: 在点 $p$ 处沿出射方向 $\omega_o$ 的辐射亮度。
@@ -40,7 +44,7 @@ $$
 - $\int_{\Omega}$: 对整个半球 $\Omega$ 上所有可能的入射方向进行积分。
 
 ## 基于 Monte Carlo 的路径追踪的路径追踪算法
-路径追踪（Path Tracing）是一种基于蒙特卡洛积分（Monte Carlo Integration） 计算全局光照的渲染方法。它可以逼真地模拟光线的 多次弹射（bounces），从而生成逼真的 间接光照、软阴影、漫反射、折射、焦散等 复杂光照效果。路径追踪的核心目标是求解上述的渲染方程
+路径追踪（Path Tracing）是一种基于蒙特卡洛积分（Monte Carlo Integration） 计算全局光照的渲染方法。它可以逼真地模拟光线的 多次弹射（bounces），从而生成逼真的 间接光照、软阴影、漫反射、折射、焦散等 复杂光照效果。路径追踪的核心目标是求解上述的渲染方程。
 
 ### 路径追踪的 Monte Carelo 近似
 蒙特卡洛路径追踪的核心思想是：
@@ -52,9 +56,13 @@ $$
 
 我们使用 **蒙特卡洛估计积分**：
 
-$$
+<!-- $$
 L_o(p, \omega_o) \approx L_e(p, \omega_o) + \frac{1}{N} \sum_{i=1}^{N} \frac{f_r(p, \omega_i, \omega_o) L_i(p, \omega_i) (\omega_i \cdot n)}{p(\omega_i)} \tag{2}
-$$
+$$ -->
+
+<p align="center">
+  <img src="assets/MonteCarlo.png" alt="Monte Carlo">
+</p>
 
 其中：
 - $N$ 是样本数（采样次数越多，结果越精确）。
