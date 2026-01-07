@@ -8,7 +8,6 @@
 /build
 /cmake-build
 CMakeSettings.json
-/example-scenes-cg24
 /output/bathroom2
 /output/cornell-box
 /output/veach-mis
