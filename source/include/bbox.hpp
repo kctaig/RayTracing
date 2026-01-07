@@ -13,6 +13,8 @@ public:
 
 	bool intersection(const Ray& ray) const;
 
+	int selectLongAxis() const;
+
 	vec3 center() const;
 
 	vec3 getMin() const { return min; }

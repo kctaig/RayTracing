@@ -1,10 +1,10 @@
 #include "bbox.hpp"
 
-BBox::BBox(const vector<Vertex>& vertices)
+BBox::BBox(const vector<Vertex> &vertices)
 {
 	min = glm::vec3(FLT_MAX);
-	max = glm::vec3(-FLT_MAX);	
-	for (const Vertex& v : vertices)
+	max = glm::vec3(-FLT_MAX);
+	for (const Vertex &v : vertices)
 	{
 		min = glm::min(min, v.pos);
 		max = glm::max(max, v.pos);
@@ -17,7 +17,7 @@ void BBox::unionMesh(const shared_ptr<Mesh> meshPtr)
 	max = glm::max(max, meshPtr->bboxPtr->max);
 }
 
-bool BBox::intersection(const Ray& ray) const
+bool BBox::intersection(const Ray &ray) const
 {
 	vec3 invDir = 1.0f / ray.getDir();
 	vec3 tmin = (min - ray.getOrigin()) * invDir;
@@ -32,7 +32,24 @@ bool BBox::intersection(const Ray& ray) const
 	return tNear <= tFar && tFar >= 0.0f;
 }
 
+int BBox::selectLongAxis() const
+{
+	int axis = 0;
+	float maxLength = getMax().x - getMin().x;
+	if (getMax().y - getMin().y > maxLength)
+	{
+		axis = 1;
+		maxLength = getMax().y - getMin().y;
+	}
+	if (getMax().z - getMin().z > maxLength)
+	{
+		axis = 2;
+		maxLength = getMax().z - getMin().z;
+	}
+	return axis;
+}
+
 vec3 BBox::center() const
 {
-	return vec3{ 0.5f * (min + max) };
+	return vec3{0.5f * (min + max)};
 }

@@ -29,8 +29,8 @@ constexpr auto EPSILON = 1e-6f;
 static float genRandomFloat(float rangeL = 0.0f, float rangeR = 1.0f) {
 	static std::random_device rd;
 	static std::default_random_engine gen(rd());
-	static std::uniform_real_distribution<float> dist(rangeL, rangeR);
-	return dist(gen);
+	static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+	return dist(gen) * (rangeR - rangeL) + rangeL;
 }
 
 static vec3 toWorld(const vec3& localDir, const vec3& n) {

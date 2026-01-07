@@ -4,23 +4,33 @@
 #include "bbox.hpp"
 #include "model.hpp"
 
-class BVH {
+#define LEAST_NUM_MESH 4
+
+class BVH
+{
 public:
+	BVH(const vector<shared_ptr<Mesh>> &meshPtrs);
 
-	BVH() {
-		left = nullptr;
-		right = nullptr;
-		bboxPtr = std::make_shared<BBox>();
-	}
+	int buildNode(int start, int end);
 
-	BVH(const vector<shared_ptr<Mesh>>& meshPtrs);
-	int selectAxis() const ;
-	bool intersection(const Ray& ray, PayLoad& payload);
+	bool intersection(const Ray &ray, PayLoad &payload) const;
+	bool intersectionNode(int nodeIndex, const Ray &ray, PayLoad &payload) const;
 
 private:
-	int numMesh = 5;
-	shared_ptr<BBox> bboxPtr;
-	vector<std::shared_ptr<Mesh>> meshPtrs;
-	shared_ptr<BVH> left;
-	shared_ptr<BVH> right;
+	struct Node
+	{
+		Node() : bboxPtr(std::make_shared<BBox>()), leftNode(-1), rightNode(-1), startIndex(-1), numMeshes(0), isLeaf(false) {}
+
+		shared_ptr<BBox> bboxPtr;
+		int leftNode;
+		int rightNode;
+		int startIndex;
+		int numMeshes;
+		bool isLeaf;
+	};
+
+	const vector<shared_ptr<Mesh>> &meshPtrs;
+	vector<int> meshIndices;
+	vector<Node> nodes;
+	int rootIndex = -1;
 };

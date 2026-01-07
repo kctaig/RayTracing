@@ -1,95 +1,89 @@
 #include "bvh.hpp"
 #include <stack>
+#include <numeric>
 
-BVH::BVH(const vector<shared_ptr<Mesh>>& meshptrs)
+BVH::BVH(const vector<shared_ptr<Mesh>> &meshPtrs) : meshPtrs(meshPtrs)
 {
-	meshPtrs = meshptrs;
-	bboxPtr = std::make_shared<BBox>();
-	for (auto& meshPtr : meshPtrs)
-	{
-		bboxPtr->unionMesh(meshPtr);
-	}
-	if (meshPtrs.size() <= numMesh)
-	{
-		left = nullptr;
-		right = nullptr;
-		return;
-	}
-	int axis = selectAxis();
-	auto compare = [axis](const std::shared_ptr<Mesh>& a, const std::shared_ptr<Mesh>& b) {
-		return a->bboxPtr->center()[axis] < b->bboxPtr->center()[axis];
-		};
-	std::sort(meshPtrs.begin(), meshPtrs.end(), compare);
+	meshIndices.resize(meshPtrs.size());
+	std::iota(meshIndices.begin(), meshIndices.end(), 0);
 
-	vector <shared_ptr<Mesh>> leftMeshes(meshPtrs.begin(), meshPtrs.begin() + meshPtrs.size() / 2);
-	vector <shared_ptr<Mesh>> rightMeshes(meshPtrs.begin() + meshPtrs.size() / 2, meshPtrs.end());
+	nodes.reserve(meshPtrs.size() * 2);
 
-	left = std::make_shared<BVH>(leftMeshes);
-	right = std::make_shared<BVH>(rightMeshes);
+	rootIndex = buildNode(0, static_cast<int>(meshPtrs.size()));
 }
 
-int BVH::selectAxis() const
+int BVH::buildNode(int start, int end)
 {
-	int axis = 0;
-	float maxLength = bboxPtr->getMax().x - bboxPtr->getMin().x;
-	if (bboxPtr->getMax().y - bboxPtr->getMin().y > maxLength)
+	Node node;
+	node.startIndex = start;
+	node.numMeshes = end - start;
+
+	for (int i = start; i < end; i++)
 	{
-		axis = 1;
-		maxLength = bboxPtr->getMax().y - bboxPtr->getMin().y;
+		node.bboxPtr->unionMesh(meshPtrs[meshIndices[i]]);
 	}
-	if (bboxPtr->getMax().z - bboxPtr->getMin().z > maxLength)
+
+	if (end - start <= LEAST_NUM_MESH)
 	{
-		axis = 2;
-		maxLength = bboxPtr->getMax().z - bboxPtr->getMin().z;
+		node.isLeaf = true;
+		nodes.push_back(node);
+		return static_cast<int>(nodes.size()) - 1;
 	}
-	return axis;
+
+	int axis = node.bboxPtr->selectLongAxis();
+
+	std::sort(meshIndices.begin() + start, meshIndices.begin() + end,
+			  [&](int a, int b)
+			  {
+				  return meshPtrs[a]->bboxPtr->center()[axis] <
+						 meshPtrs[b]->bboxPtr->center()[axis];
+			  });
+
+	int mid = start + (end - start) / 2;
+	node.leftNode = buildNode(start, mid);
+	node.rightNode = buildNode(mid, end);
+
+	nodes.push_back(node);
+	return static_cast<int>(nodes.size()) - 1;
 }
 
-bool BVH::intersection(const Ray& ray, PayLoad& payload)
+bool BVH::intersection(const Ray &ray, PayLoad &payload) const
 {
-	if (!bboxPtr->intersection(ray)) return false;
+	if (rootIndex == -1)
+		return false;
+	return intersectionNode(rootIndex, ray, payload);
+}
 
-	bool isHit = false;
-	if (!left && !right) {
-		for (auto& meshptr : meshPtrs) {
-			if (meshptr->intersection(ray, payload)) {
+bool BVH::intersectionNode(int nodeIndex, const Ray &ray, PayLoad &payload) const
+{
+	if (nodeIndex == -1)
+		return false;
+
+	const Node &node = nodes[nodeIndex];
+
+	if (!node.bboxPtr->intersection(ray))
+		return false;
+
+	bool hit = false;
+	if (node.isLeaf)
+	{
+		for (int i = 0; i < node.numMeshes; i++)
+		{
+			int meshIdx = meshIndices[node.startIndex + i];
+			shared_ptr<Mesh> meshptr = meshPtrs[meshIdx];
+			if (meshptr->intersection(ray, payload))
+			{
 				payload.meshPtr = meshptr;
-				isHit = true;
+				hit = true;
 			}
 		}
+		return hit;
 	}
-	else {
-		if (left && left->intersection(ray, payload))
-			isHit = true;
-		if (right && right->intersection(ray, payload))
-			isHit = true;
-	}
-	return isHit;
 
-	/*
-	// also works but slower (recursive version)
-	std::stack<BVH*> stack;
-	stack.push(this);
-	float rec_t = payload.t;
-	bool isHit = false;
-	while (!stack.empty()) {
-		auto current = stack.top();
-		stack.pop();
-		if (!current->bboxPtr->intersection(ray)) continue;
-		if (!current->left && !current->right) {
-			// 叶子节点：检查所有网格
-			for (auto& meshptr : current->meshPtrs) {
-				if (meshptr->intersection(ray, payload))
-					isHit = true;
-			}
-		}
-		else {
-			// 非叶子节点：将左右子树压入栈
-			if (current->left) stack.push(current->left.get());
-			if (current->right) stack.push(current->right.get());
-		}
-	}
-	return isHit;
-	*/
+	if (intersectionNode(node.leftNode, ray, payload))
+		hit = true;
+	if (intersectionNode(node.rightNode, ray, payload))
+		hit = true;
 
+	return hit;
 }

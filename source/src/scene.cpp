@@ -226,6 +226,7 @@ shared_ptr<Sampler> Scene::sampleLight(const PayLoad& payload) const
 	shared_ptr<Light> lptr = modelPtr->randomSelectLight();
 	// select a point on the light
 	int meshIdx = static_cast<int>(genRandomFloat() * lptr->getMeshPtrs().size());
+	meshIdx = meshIdx % lptr->getMeshPtrs().size();
 	shared_ptr<Mesh> meshPtr = lptr->getMeshPtrs()[meshIdx];
 	// sample a point on the light
 	vec3 weights = samplerPtr->weightSamplingOnMesh();

@@ -5,14 +5,14 @@
 int main()
 {
 	const std::string sceneDir = "../../example-scenes-cg24";
-	//const std::string fileName = "cornell-box";
-	//const std::string fileName = "veach-mis";
-	 const std::string fileName = "bathroom2";
+	// const std::string fileName = "cornell-box";
+	const std::string fileName = "veach-mis";
+	// const std::string fileName = "bathroom2";
 	Scene scene(sceneDir + "/" + fileName, fileName);
 	scene.getFilm()->scale(0.5f);
 	scene.BVHBuild();
 	scene.setMaxDepth(5);
-	scene.setNumIter(10);
+	scene.setNumIter(100);
 	scene.setNumSamples(5000);
 	scene.render();
 	return 0;
