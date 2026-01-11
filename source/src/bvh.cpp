@@ -2,17 +2,17 @@
 #include <stack>
 #include <numeric>
 
-BVH::BVH(const vector<shared_ptr<Mesh>> &meshPtrs) : meshPtrs(meshPtrs)
+BVH::BVH(const vector<shared_ptr<Mesh>> &meshes) : meshes(meshes)
 {
-	meshIndices.resize(meshPtrs.size());
-	std::iota(meshIndices.begin(), meshIndices.end(), 0);
+	indices.resize(meshes.size());
+	std::iota(indices.begin(), indices.end(), 0);
 
-	nodes.reserve(meshPtrs.size() * 2);
+	nodes.reserve(meshes.size() * 2);
 
-	rootIndex = buildNode(0, static_cast<int>(meshPtrs.size()));
+	rootIndex = buildNode(0, static_cast<int>(meshes.size()));
 }
 
-int BVH::buildNode(int start, int end)
+int BVH::buildNode(const int start, const int end)
 {
 	Node node;
 	node.startIndex = start;
@@ -20,7 +20,7 @@ int BVH::buildNode(int start, int end)
 
 	for (int i = start; i < end; i++)
 	{
-		node.bboxPtr->unionMesh(meshPtrs[meshIndices[i]]);
+		node.bboxPtr->unionMesh(meshes[indices[i]]);
 	}
 
 	if (end - start <= LEAST_NUM_MESH)
@@ -32,14 +32,14 @@ int BVH::buildNode(int start, int end)
 
 	int axis = node.bboxPtr->selectLongAxis();
 
-	std::sort(meshIndices.begin() + start, meshIndices.begin() + end,
+	std::sort(indices.begin() + start, indices.begin() + end,
 			  [&](int a, int b)
 			  {
-				  return meshPtrs[a]->bboxPtr->center()[axis] <
-						 meshPtrs[b]->bboxPtr->center()[axis];
+				  return meshes[a]->bboxPtr->center()[axis] <
+						 meshes[b]->bboxPtr->center()[axis];
 			  });
 
-	int mid = start + (end - start) / 2;
+    const int mid = start + (end - start) / 2;
 	node.leftNode = buildNode(start, mid);
 	node.rightNode = buildNode(mid, end);
 
@@ -54,7 +54,7 @@ bool BVH::intersection(const Ray &ray, PayLoad &payload) const
 	return intersectionNode(rootIndex, ray, payload);
 }
 
-bool BVH::intersectionNode(int nodeIndex, const Ray &ray, PayLoad &payload) const
+bool BVH::intersectionNode(const int nodeIndex, const Ray &ray, PayLoad &payload) const
 {
 	if (nodeIndex == -1)
 		return false;
@@ -69,11 +69,10 @@ bool BVH::intersectionNode(int nodeIndex, const Ray &ray, PayLoad &payload) cons
 	{
 		for (int i = 0; i < node.numMeshes; i++)
 		{
-			int meshIdx = meshIndices[node.startIndex + i];
-			shared_ptr<Mesh> meshptr = meshPtrs[meshIdx];
-			if (meshptr->intersection(ray, payload))
+            const int meshIdx = indices[node.startIndex + i];
+            if (const shared_ptr<Mesh> mesh = meshes[meshIdx]; mesh->intersection(ray, payload))
 			{
-				payload.meshPtr = meshptr;
+				payload.mesh = mesh;
 				hit = true;
 			}
 		}

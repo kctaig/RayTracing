@@ -1,19 +1,16 @@
-#include "head_include.hpp"
-#include "camera.hpp"
-#include "scene.hpp"
+#include "render.hpp"
 
-int main()
-{
-	const std::string sceneDir = "../../example-scenes-cg24";
-	// const std::string fileName = "cornell-box";
-	const std::string fileName = "veach-mis";
-	// const std::string fileName = "bathroom2";
-	Scene scene(sceneDir + "/" + fileName, fileName);
-	scene.getFilm()->scale(0.5f);
-	scene.BVHBuild();
-	scene.setMaxDepth(5);
-	scene.setNumIter(100);
-	scene.setNumSamples(5000);
-	scene.render();
-	return 0;
+int main() {
+    const std::string sceneDir = "../../datasets";
+    // const std::string fileName = "cornell-box";
+    // const std::string fileName = "veach-mis";
+    const std::string fileName = "bathroom2";
+
+    Render render(sceneDir + "/" + fileName, fileName);
+    // render.film->scale(0.5f);
+    render.setMaxDepth(5);
+    render.setNumIter(10);
+    render.setNumSamples(5000);
+    render.render();
+    return 0;
 }

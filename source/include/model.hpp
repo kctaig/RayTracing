@@ -1,60 +1,59 @@
 #pragma once
 
-#include "head_include.hpp"
 #include "Ray.hpp"
-#include "material.hpp"
+#include "head_include.hpp"
 #include "light.hpp"
 #include "payload.hpp"
 
 class BBox;
+class Material;
 
-class Vertex
-{
-public:
-	Vertex() = default;
-	Vertex(vec3 p, vec3 n) :pos(p), normal(n), uv(vec2{ 0 }) {}
-	Vertex(vec3 p, vec3 n, vec2 uv) :pos(p), normal(n), uv(uv) {}
+class Vertex {
+  public:
+    Vertex() = default;
+    Vertex(vec3 p, vec3 n) : pos(p), normal(n), uv(vec2{0}) {}
+    Vertex(vec3 p, vec3 n, vec2 uv) : pos(p), normal(n), uv(uv) {}
 
-	vec3 pos;
-	vec3 normal;
-	vec2 uv;
+    vec3 pos;
+    vec3 normal;
+    vec2 uv;
 };
 
-class Mesh
-{
-public:
-	bool intersection(const Ray& ray, PayLoad& payload) const;
-	float calculateArea();
+class Mesh {
+  public:
+    bool intersection(const Ray& ray, PayLoad& payload) const;
+    float calculateArea() const;
 
-	const vec2 getTexCoord(const vec2& uv) const;
-	const vec3 getNormal(const vec2& uv) const;
-	
-	vector<Vertex> vertices;
-	shared_ptr<BBox> bboxPtr;
-	shared_ptr<Material> matPtr;
+    vec2 getTexCoord(const vec2& uv) const;
+    vec3 getNormal(const vec2& uv) const;
+
+    vector<Vertex> vertices;
+    shared_ptr<BBox> bboxPtr;
+    shared_ptr<Material> material;
 };
 
-class Model
-{
-public:
-	Model() {}
+class Model {
+  public:
+    Model() = default;
 
-	void loadFromFile(const string, const string);
+    void loadFromFile(const string& fileDir, const string& fileName);
 
-	vector<shared_ptr<Light>>& getLightPtrs() { return lightPtrs; }
-	const vector<shared_ptr<Light>>& getLightPtrs() const { return lightPtrs; }
+    // Getters
+    auto& getLight() { return lights; }
+    const auto& getLight() const { return lights; }
+    auto& getMesh() { return meshes; }
+    const auto& getMesh() const { return meshes; }
+    auto& getMaterial() { return materials; }
+    const auto& getMaterial() const { return materials; }
 
-	vector<shared_ptr<Mesh>>& getMeshPtrs() { return meshPtrs; }
-	const vector<shared_ptr<Mesh>>& getMeshPtrs() const { return meshPtrs; }
+    void addLight(const shared_ptr<Light>& light) { lights.push_back(std::move(light)); }
 
-	void addLight(shared_ptr<Light> light) { lightPtrs.push_back(light); }
+    shared_ptr<Light> randomSelectLight() const;
 
-	shared_ptr<Light> randomSelectLight() const;
+    float calculateLightsArea() const;
 
-	float calculateLightsArea() const;
-
-private:
-	vector<shared_ptr<Mesh>> meshPtrs;
-	vector<shared_ptr<Material>> matPtrs;
-	vector<shared_ptr<Light>> lightPtrs;
+  private:
+    vector<shared_ptr<Mesh>> meshes;
+    vector<shared_ptr<Material>> materials;
+    vector<shared_ptr<Light>> lights;
 };

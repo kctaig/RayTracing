@@ -1,62 +1,59 @@
 #pragma once
 
+#include <chrono>
+#include <glm.hpp>
 #include <iostream>
 #include <memory>
+#include <random>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <random>
-#include <glm.hpp>
 
+using glm::cross;
+using glm::dot;
 using glm::ivec2;
+using glm::mat4;
+using glm::normalize;
 using glm::vec2;
 using glm::vec3;
 using glm::vec4;
-using glm::mat4;
-using glm::normalize;
-using glm::cross;
-using glm::dot;
 
 using std::cout;
 using std::endl;
-using std::vector;
-using std::string;
-using std::shared_ptr;
 using std::make_shared;
+using std::shared_ptr;
+using std::string;
+using std::vector;
 
 #define M_PI 3.1415926f
 constexpr auto EPSILON = 1e-6f;
 
-static float genRandomFloat(float rangeL = 0.0f, float rangeR = 1.0f) {
-	static std::random_device rd;
-	static std::default_random_engine gen(rd());
-	static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-	return dist(gen) * (rangeR - rangeL) + rangeL;
+static float genRandomFloat(const float rangeL = 0.0f, const float rangeR = 1.0f) {
+    static std::random_device rd;
+    static std::default_random_engine gen(rd());
+    static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    return dist(gen) * (rangeR - rangeL) + rangeL;
 }
 
 static vec3 toWorld(const vec3& localDir, const vec3& n) {
-	vec3 arbitrary;
-	if (std::abs(n.x) > std::abs(n.y) && std::abs(n.x) > std::abs(n.z)) {
-		arbitrary = vec3(0, 1, 0);
-	}
-	else if (std::abs(n.y) > std::abs(n.z)) {
-		arbitrary = vec3(0, 0, 1);
-	}
-	else {
-		arbitrary = vec3(1, 0, 0);
-	}
-	vec3 tangent = normalize(cross(n, arbitrary));
-	vec3 bitangent = normalize(cross(n, tangent));
-	vec3 worldDir = localDir.x * tangent + localDir.y * bitangent + localDir.z * n;
-	return normalize(worldDir);
+    vec3 arbitrary;
+    if (std::abs(n.x) > std::abs(n.y) && std::abs(n.x) > std::abs(n.z)) {
+        arbitrary = vec3(0, 1, 0);
+    } else if (std::abs(n.y) > std::abs(n.z)) {
+        arbitrary = vec3(0, 0, 1);
+    } else {
+        arbitrary = vec3(1, 0, 0);
+    }
+    const vec3 tangent = normalize(cross(n, arbitrary));
+    const vec3 bitangent = normalize(cross(n, tangent));
+    const vec3 worldDir = localDir.x * tangent + localDir.y * bitangent + localDir.z * n;
+    return normalize(worldDir);
 }
 
-static float powerHeuristic(float pdf1, float pdf2)
-{
-	float f1 = pdf1 * pdf1;
-	float f2 = pdf2 * pdf2;
-	return (f1 + f2) == 0.f ? 0.f : f1 / (f1 + f2);
+static float powerHeuristic(const float pdf1, const float pdf2) {
+    const float f1 = pdf1 * pdf1;
+    const float f2 = pdf2 * pdf2;
+    return (f1 + f2) == 0.f ? 0.f : f1 / (f1 + f2);
 }
 
-static bool isNAN(const vec3& v) {
-	return v.x != v.x || v.y != v.y || v.z != v.z;
-}
+static bool isNAN(const vec3& v) { return v.x != v.x || v.y != v.y || v.z != v.z; }
