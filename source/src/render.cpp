@@ -79,23 +79,11 @@ Render::Render(const string& sceneDir, const string& fileName) {
 }
 
 void Render::render() {
-    const auto w = film->width;
-    const auto h = film->height;
-    const int numPixels = w * h;
     int ssp = 0;
     const auto start = std::chrono::high_resolution_clock::now();
 
     while (++ssp < maxNumSample) {
-#pragma omp parallel for
-        for (int i = 0; i < numPixels; i++) {
-            int y = i / w, x = i % w;
-            Ray ray = camera->rayCasting(film, {x, y});
-            // vec3 color = rayTest(ray);
-            // bvhPtr->intersection(ray, PayLoad{});
-            PayLoad payload{};
-            const vec3 color = rayTracing(ray, payload, 0);
-            film->addToPixel(x, y, color);
-        }
+        renderOneSample();
         if (ssp % numIter == 0) {
             auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(
                 std::chrono::high_resolution_clock::now() - start
@@ -104,6 +92,21 @@ void Render::render() {
                  << endl;
         }
         if (ssp % numIter == 0) { film->saveToFile(this->fileName, ssp); }
+    }
+}
+
+void Render::renderOneSample() {
+    const auto w = film->width;
+    const auto h = film->height;
+    const int numPixels = w * h;
+
+#pragma omp parallel for
+    for (int i = 0; i < numPixels; i++) {
+        int y = i / w, x = i % w;
+        Ray ray = camera->rayCasting(film, {x, y});
+        PayLoad payload{};
+        const vec3 color = rayTracing(ray, payload, 0);
+        film->addToPixel(x, y, color);
     }
 }
 
@@ -129,10 +132,11 @@ bool Render::intersection(const Ray& ray, PayLoad& payload) const {
 }
 
 vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
-    if (depth >= maxDepth) return vec3(0);
-    // judge the first intersection
-    if (depth == 0 && !intersection(wo, currentPayload)) return vec3(0);
-    if (depth == 0 && currentPayload.mesh->material->light)
+    // judge the intersection
+    if (depth == 0 && !intersection(wo, currentPayload) || depth >= maxDepth) return vec3(0);
+
+    // hit the light, directly return the radiance
+    if (currentPayload.mesh->material->light)
         return currentPayload.mesh->material->light->getRadiance();
 
     currentPayload.initBxDFs();

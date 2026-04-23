@@ -5,10 +5,31 @@
 #include <fstream>
 #include <iostream>
 
-void Film::reset(const int width, const int height) {
-    this->width = width;
-    this->height = height;
-    this->pixels.resize(static_cast<size_t>(width * height));
+void Film::reset(const int w, const int h) {
+    this->width = w;
+    this->height = h;
+    this->pixels.assign(static_cast<size_t>(w * h), vec3(0.0f));
+}
+
+void Film::clear() { std::fill(pixels.begin(), pixels.end(), vec3(0.0f)); }
+
+void Film::toRGB8(vector<unsigned char>& out, int sampleCount, bool applyGamma) const {
+    out.resize(static_cast<size_t>(width * height * 3));
+    const float invSample = 1.0f / static_cast<float>(std::max(1, sampleCount));
+    constexpr float gamma = 1.0f / 2.2f;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            vec3 color = getPixel(x, y) * invSample;
+            color = clamp(color, 0.f, 1.f);
+            if (applyGamma) color = pow(color, vec3(gamma));
+
+            const int idx = (y * width + x) * 3;
+            out[idx] = static_cast<uint8_t>(color.x * 255.99f);
+            out[idx + 1] = static_cast<uint8_t>(color.y * 255.99f);
+            out[idx + 2] = static_cast<uint8_t>(color.z * 255.99f);
+        }
+    }
 }
 
 void Film::scale(const float s) {
@@ -24,18 +45,8 @@ void Film::saveToFile(const std::string& fileName, int ssp) const {
     std::ofstream outfile(filePath, std::ios::binary);
     if (!outfile) { std::cout << "can not open file: " << fileName << std::endl; }
     outfile << "P6\n" << width << ' ' << height << "\n255\n";
-    constexpr float gamma = 1.0f / 2.2f;
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            vec3 color = getPixel(x, y) / static_cast<float>(ssp);
-            // check the color value
-            // if (color.x < 0.f || color.y < 0.f || color.z < 0.f) color = vec3(0, 0, 1);
-            // if (color.x > 1.f || color.y > 1.f || color.z > 1.f) color = vec3(1, 0, 0);
-            // if (isNAN(color)) color = vec3(0, 1, 0);
-            color = pow(clamp(color, 0.f, 1.f), vec3(gamma)) * 255.99f;
-            outfile << static_cast<uint8_t>(color.x) << static_cast<uint8_t>(color.y)
-                    << static_cast<uint8_t>(color.z);
-        }
-    }
+    vector<unsigned char> imageData;
+    toRGB8(imageData, ssp, true);
+    outfile.write(reinterpret_cast<const char*>(imageData.data()), imageData.size());
     outfile.close();
 }

@@ -34,6 +34,12 @@ class Render {
     shared_ptr<Sampler> sampleLight(const PayLoad& payload) const;
 
     void render();
+    void renderOneSample();
+
+    shared_ptr<Camera> camera;
+    shared_ptr<Film> film;
+    shared_ptr<Model> model;
+    shared_ptr<BVH> bvh;
 
   private:
     string fileName;
@@ -41,9 +47,4 @@ class Render {
     int maxDepth = 5;
     int numIter = 50;
     float rrThreshold = 0.7f;
-
-    shared_ptr<Camera> camera;
-    shared_ptr<Film> film;
-    shared_ptr<Model> model;
-    shared_ptr<BVH> bvh;
 };
