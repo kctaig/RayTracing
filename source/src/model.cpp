@@ -90,10 +90,27 @@ void Model::loadFromFile(const string& fileDir, const string& fileName) {
 
         // texture
         if (!mats[i].diffuse_texname.empty()) {
-            newMat->useTexture = true;
             string texturePath = fileDir + "/" + mats[i].diffuse_texname;
             auto texturePtr = std::make_shared<Texture>(texturePath, mats[i].diffuse_texname);
-            newMat->texture = texturePtr;
+            if (texturePtr->valid()) {
+                newMat->useTexture = true;
+                newMat->texture = texturePtr;
+            } else {
+                newMat->useTexture = false;
+            }
+        }
+
+        // specular texture (map_Ks)
+        if (!mats[i].specular_texname.empty()) {
+            string specularTexturePath = fileDir + "/" + mats[i].specular_texname;
+            auto specularTexturePtr =
+                std::make_shared<Texture>(specularTexturePath, mats[i].specular_texname);
+            if (specularTexturePtr->valid()) {
+                newMat->useSpecularTexture = true;
+                newMat->specularTexture = specularTexturePtr;
+            } else {
+                newMat->useSpecularTexture = false;
+            }
         }
 
         // light material
@@ -127,17 +144,30 @@ void Model::loadFromFile(const string& fileDir, const string& fileName) {
                 mesh->vertices[v].pos = vec3(vx, vy, vz);
 
                 // add normal
-                tinyobj::real_t nx = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 0];
-                tinyobj::real_t ny = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 1];
-                tinyobj::real_t nz = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 2];
-                mesh->vertices[v].normal = vec3(nx, ny, nz);
+                if (idx.normal_index >= 0 &&
+                    3 * static_cast<size_t>(idx.normal_index) + 2 < attrib.normals.size()) {
+                    tinyobj::real_t nx =
+                        attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 0];
+                    tinyobj::real_t ny =
+                        attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 1];
+                    tinyobj::real_t nz =
+                        attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 2];
+                    mesh->vertices[v].normal = vec3(nx, ny, nz);
+                } else {
+                    mesh->vertices[v].normal = vec3(0.0f, 1.0f, 0.0f);
+                }
 
                 // add texture
-                tinyobj::real_t tx =
-                    attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 0];
-                tinyobj::real_t ty =
-                    attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 1];
-                mesh->vertices[v].uv = vec2(tx, ty);
+                if (idx.texcoord_index >= 0 &&
+                    2 * static_cast<size_t>(idx.texcoord_index) + 1 < attrib.texcoords.size()) {
+                    tinyobj::real_t tx =
+                        attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 0];
+                    tinyobj::real_t ty =
+                        attrib.texcoords[2 * static_cast<size_t>(idx.texcoord_index) + 1];
+                    mesh->vertices[v].uv = vec2(tx, ty);
+                } else {
+                    mesh->vertices[v].uv = vec2(0.0f);
+                }
             }
 
             // bbox

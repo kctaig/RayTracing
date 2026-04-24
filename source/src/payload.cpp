@@ -7,12 +7,12 @@ void PayLoad::initBxDFs() {
     bsdf = make_shared<BSDF>();
     const shared_ptr<Material> matPtr = mesh->material;
     vec3 diffuse = matPtr->diffuse;
-    vec3 specular = matPtr->specular;
     vec3 transmittance = matPtr->transmittance;
     float shininess = matPtr->shininess;
     float ior = matPtr->refraIndex;
     const vec2 texCoord = mesh->getTexCoord(uv);
     vec3 texRadiance = matPtr->getDiffuse(texCoord);
+    vec3 specular = matPtr->getSpecular(texCoord);
 
     bool isTransmissive = (ior > 1.0f && glm::length(transmittance) > 0.01f);
     bool isPerfectMirror =

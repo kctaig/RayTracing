@@ -15,6 +15,7 @@ class Texture {
     int height{0};
     int channels{0};
     bool assumeSrgb{true};
+};
 
 class Material {
   public:
@@ -29,6 +30,7 @@ class Material {
           refraIndex(ni) {}
 
     vec3 getDiffuse(const vec2& texCoord) const;
+    vec3 getSpecular(const vec2& texCoord) const;
 
     string matName;
 
@@ -42,4 +44,6 @@ class Material {
 
     bool useTexture = false;
     shared_ptr<Texture> texture;
+    bool useSpecularTexture = false;
+    shared_ptr<Texture> specularTexture;
 };
