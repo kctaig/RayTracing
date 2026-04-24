@@ -2,8 +2,8 @@
 
 ## 基于 Monte Carlo 的路径追踪
 
-- 构建方式：CMake
-- 场景文件位置：imgui 界面中 import
+- 构建方式：CMake，编译后直接运行 `bin/RayTracing` 可执行文件
+- 场景文件位置：imgui 界面中 import 按钮选择 `datasets/` 目录下的 `.xml` 文件
 - 输出位置：`bin/`
 - 使用的库：`stb_image`、`tiny_obj_loader`、`tinyxml2`、`glm`、`OpenMP`、`imgui`
 - 主要技术：
@@ -46,12 +46,8 @@
 我们使用 **蒙特卡洛估计积分**：
 
 $$
-L_o(p, \omega_o) \approx L_e(p, \omega_o) + \frac{1}{N} \sum_{i=1}^{N} \frac{f_r(p, \omega_i, \omega_o) L_i(p, \omega_i) (\omega_i \cdot n)}{p(\omega_i)} \tag{1}
+L_o(p, \omega_o) \approx L_e(p, \omega_o) + \frac{1}{N} \sum_{i=1}^{N} \frac{f_r(p, \omega_i, \omega_o) L_i(p, \omega_i) (\omega_i \cdot n)}{p(\omega_i)}
 $$
-
-<!-- <p align="center">
-  <img src="assets/MonteCarlo.png" alt="Monte Carlo">
-</p> -->
 
 其中：
 
