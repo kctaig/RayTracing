@@ -90,20 +90,18 @@ void RtImGuiWindow::endFrame() {
     glfwSwapBuffers(window);
 }
 
-RtWindowActions RtImGuiWindow::renderControls(
-    bool& rendering, int& currentSample, int& maxSamples, int& samplesPerFrame
-) {
+RtWindowActions RtImGuiWindow::renderControls(RtRenderState& state) {
     RtWindowActions actions;
 
     ImGui::Begin("Controls");
 
-    if (ImGui::Button("Start / Restart")) {
-        rendering = true;
-        currentSample = 0;
+    if (ImGui::Button("Start")) {
+        state.rendering = true;
+        state.currentSample = 0;
         actions.restart = true;
     }
     ImGui::SameLine();
-    if (ImGui::Button(rendering ? "Pause" : "Resume")) { rendering = !rendering; }
+    if (ImGui::Button(state.rendering ? "Pause" : "Resume")) { state.rendering = !state.rendering; }
     ImGui::SameLine();
     if (ImGui::Button("Save")) { actions.save = true; }
     ImGui::SameLine();
@@ -111,8 +109,8 @@ RtWindowActions RtImGuiWindow::renderControls(
         if (pickSceneXmlFromDialog(
                 sceneDirBuf, sizeof(sceneDirBuf), sceneNameBuf, sizeof(sceneNameBuf)
             )) {
-            rendering = false;
-            currentSample = 0;
+            state.rendering = false;
+            state.currentSample = 0;
             actions.importModel = true;
         }
     }
@@ -120,13 +118,14 @@ RtWindowActions RtImGuiWindow::renderControls(
     ImGui::Text("Scene Dir: %s", sceneDirBuf);
     ImGui::Text("Scene Name: %s", sceneNameBuf);
 
-    ImGui::SliderInt("Max Sample", &maxSamples, 1, 1000);
-    ImGui::SliderInt("Samples / Frame", &samplesPerFrame, 1, 8);
-    if (currentSample >= maxSamples) rendering = false;
-    ImGui::Text("Current Sample:%d", currentSample);
-    ImGui::Text("Rendering:%s", rendering ? "Yes" : "No");
+    ImGui::SliderInt("Max Sample", &state.maxSamples, 1, 1000);
+    ImGui::SliderInt("Samples / Frame", &state.samplesPerFrame, 1, 8);
+    if (state.currentSample >= state.maxSamples) state.rendering = false;
+    ImGui::Text("Current Sample:%d", state.currentSample);
+    ImGui::Text("Rendering:%s", state.rendering ? "Yes" : "No");
+    ImGui::Text("Time: %.2f seconds", state.elapsTime);
     ImGui::ProgressBar(
-        static_cast<float>(currentSample) / static_cast<float>(std::max(1, maxSamples)),
+        static_cast<float>(state.currentSample) / static_cast<float>(std::max(1, state.maxSamples)),
         ImVec2(0.0f, 0.0f)
     );
 

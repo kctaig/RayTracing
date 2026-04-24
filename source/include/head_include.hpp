@@ -30,6 +30,7 @@ namespace fs = std::filesystem;
 
 #define M_PI 3.1415926f
 constexpr auto EPSILON = 1e-6f;
+constexpr auto MIN_LIGHTING = 1e-1f;
 
 inline float genRandomFloat(const float rangeL = 0.0f, const float rangeR = 1.0f) {
     static std::random_device rd;
