@@ -161,9 +161,9 @@ void Model::loadFromFile(const string& fileDir, const string& fileName) {
     auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::high_resolution_clock::now() - start
     );
-    cout << "Vertices: " << attrib.vertices.size() << endl
-         << "Faces: " << meshes.size() << endl
-         << "Model Build Time: " << duration.count() << " seconds" << endl;
+    cout << "Model Vertices: " << attrib.vertices.size() << endl
+         << "Model Faces: " << meshes.size() << endl
+         << "Model Import Time: " << duration.count() << " seconds" << endl;
 }
 
 shared_ptr<Light> Model::randomSelectLight() const {

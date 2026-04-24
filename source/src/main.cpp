@@ -5,7 +5,8 @@
 #include "render.hpp"
 
 int main() {
-    std::string sceneDir = "../../datasets/CornellBox";
+    const fs::path projectRoot = fs::current_path();
+    std::string sceneDir = (projectRoot / "../datasets/CornellBox").string();
     std::string fileName = "CornellBox-Sphere";
     auto buildRender = [](const std::string& dir, const std::string& name) {
         auto r = std::make_shared<Render>(dir, name);

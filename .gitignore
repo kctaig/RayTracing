@@ -2,8 +2,9 @@
 .vscode
 .idea
 cmake-*/
+bin/
+build/
 CMakeSettings.json
-build
-outputs
+outputs/
 Doxygen/
 **/imgui.ini

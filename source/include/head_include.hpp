@@ -28,9 +28,10 @@ using std::vector;
 
 namespace fs = std::filesystem;
 
-#define M_PI 3.1415926f
-constexpr auto EPSILON = 1e-6f;
-constexpr auto MIN_LIGHTING = 1e-1f;
+constexpr float M_PI = 3.1415926f;
+constexpr float EPSILON = 1e-6f;
+constexpr float MIN_LIGHTING = 1e-2f;
+constexpr vec3 cie1931Weights(0.212671f, 0.715160f, 0.072169f);
 
 inline float genRandomFloat(const float rangeL = 0.0f, const float rangeR = 1.0f) {
     static std::random_device rd;
@@ -65,3 +66,17 @@ inline bool isNAN(const vec3& v) { return v.x != v.x || v.y != v.y || v.z != v.z
 inline bool fileExists(const std::string& sceneDir, const std::string& fileName) {
     return fs::exists(fs::path(sceneDir) / (fileName + ".xml"));
 }
+
+inline float radicalInverse(int base, int index) {
+    float inverseBase = 1.0f / static_cast<float>(base);
+    float fraction = inverseBase;
+    float result = 0.0f;
+    while (index > 0) {
+        result += static_cast<float>(index % base) * fraction;
+        index /= base;
+        fraction *= inverseBase;
+    }
+    return result;
+}
+
+inline vec2 halton2D(int index) { return vec2(radicalInverse(2, index), radicalInverse(3, index)); }

@@ -51,11 +51,12 @@ void Film::scale(const float s) {
 }
 
 void Film::saveToFile(const std::string& fileName, int ssp) const {
-    const string dir = "../../outputs/" + fileName + "/";
-    if (!std::filesystem::exists(dir)) { std::filesystem::create_directories(dir); }
+    const fs::path projectRoot = fs::current_path();
+    const string dir = (projectRoot / "outputs" / fileName).string() + "/";
+    if (!fs::exists(dir)) fs::create_directories(dir);
     const string filePath = dir + fileName + "_" + std::to_string(ssp) + ".ppm";
     std::ofstream outfile(filePath, std::ios::binary);
-    if (!outfile) { std::cout << "can not open file: " << fileName << std::endl; }
+    if (!outfile) { std::cout << "ERROR: Can not open file: " << fileName << std::endl; }
     outfile << "P6\n" << width << ' ' << height << "\n255\n";
     vector<unsigned char> imageData;
     toRGB8(imageData, ssp, true);
