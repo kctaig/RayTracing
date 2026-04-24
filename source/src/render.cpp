@@ -96,16 +96,29 @@ void Render::render() {
 void Render::renderOneSample(int sampleIndex) {
     const auto w = film->width;
     const auto h = film->height;
-    const int numPixels = w * h;
+    constexpr int tileSize = 64;
+    const int tilesX = (w + tileSize - 1) / tileSize;
+    const int tilesY = (h + tileSize - 1) / tileSize;
+    const int numTiles = tilesX * tilesY;
     const vec2 jitter = halton2D(sampleIndex + 1) - vec2(0.5f, 0.5f);
 
-#pragma omp parallel for
-    for (int i = 0; i < numPixels; i++) {
-        int y = i / w, x = i % w;
-        Ray ray = camera->rayCasting(film, {x, y}, jitter);
-        PayLoad payload{};
-        const vec3 color = debugNormalMode ? rayTest(ray) : rayTracing(ray, payload, 0);
-        film->addToPixel(x, y, color);
+#pragma omp parallel for schedule(dynamic)
+    for (int tileIdx = 0; tileIdx < numTiles; tileIdx++) {
+        const int tileX = tileIdx % tilesX;
+        const int tileY = tileIdx / tilesX;
+        const int x0 = tileX * tileSize;
+        const int y0 = tileY * tileSize;
+        const int x1 = std::min(x0 + tileSize, w);
+        const int y1 = std::min(y0 + tileSize, h);
+
+        for (int y = y0; y < y1; y++) {
+            for (int x = x0; x < x1; x++) {
+                Ray ray = camera->rayCasting(film, {x, y}, jitter);
+                PayLoad payload{};
+                const vec3 color = debugNormalMode ? rayTest(ray) : rayTracing(ray, payload, 0);
+                film->addToPixel(x, y, color);
+            }
+        }
     }
 }
 
