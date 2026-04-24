@@ -6,8 +6,8 @@
 2. [LambertianDiffuseBRDF（漫反射）](#lambertiandiffusebrdf漫反射)
 3. [PhongSpecularBRDF（高光反射）](#phongspecularbrdf高光反射)
 4. [MirrorSpecularBRDF（镜面反射）](#mirrorspecularbrdf镜面反射)
-5. [BSDF 混合机制](#bsdf-混合机制)
-6. [在渲染中的应用](#在渲染中的应用)
+5. [TransmissiveBRDF（透射）](#transmissivebrdf透射)
+6. [BSDF 混合机制](#bsdf-混合机制)
 
 ---
 
@@ -18,6 +18,7 @@
 BxDF（Bidirectional Reflectance Distribution Function，双向反射分布函数）描述了**光线如何在表面上反射**的物理规律。
 
 **物理意义**：给定入射方向 `wo` 和出射方向 `wi`，BxDF告诉我们：
+
 - 有多少光线从 `wo` 方向反射到 `wi` 方向
 - 反射光线的颜色和强度
 
@@ -49,6 +50,7 @@ L_o(p, \omega_o) \approx L_e(p, \omega_o) + \frac{1}{N} \sum_{i=1}^{N} \frac{f_r
 $$
 
 其中：
+
 - $L_o$：出射辐射亮度
 - $L_e$：自发光辐射亮度
 - $f_r$：BRDF（双向反射分布函数）
@@ -103,6 +105,7 @@ f_r(\omega_i, \omega_o) = \frac{\rho}{\pi}
 $$
 
 其中：
+
 - $\rho$ 是反照率（albedo），即材质颜色
 - $\pi$ 是归一化因子
 
@@ -167,6 +170,7 @@ vec3 sampleDir(const vec3& wo, const vec3& n) const {
 ### 漫反射特点
 
 | 特性 | 值 |
+
 |------|-----|
 | **PDF** | `1/π` |
 | **BRDF** | `radiance / π` |
@@ -183,6 +187,7 @@ vec3 sampleDir(const vec3& wo, const vec3& n) const {
 Phong模型是一种**经验模型**，用于模拟光滑表面的镜面反射。它基于**半程向量**（halfway vector）来计算高光强度。
 
 **核心思想**：
+
 - 当观察方向与完美反射方向接近时，高光强度最大
 - 使用指数参数控制高光的集中程度
 
@@ -195,6 +200,7 @@ $$
 $$
 
 **几何意义**：
+
 - 当 $\omega_i$ 是完美反射方向时，$\mathbf{h}$ 与法向量 $\mathbf{n}$ 重合
 - $\mathbf{n} \cdot \mathbf{h}$ 越接近1，高光越强
 
@@ -216,6 +222,7 @@ p(\mathbf{h}) = \frac{\alpha + 1}{2\pi} (\mathbf{n} \cdot \mathbf{h})^\alpha
 $$
 
 **参数说明**：
+
 - $\alpha$：高光指数（shininess）
   - $\alpha = 1$：宽大、柔和的高光
   - $\alpha = 100$：尖锐、明亮的高光
@@ -247,6 +254,7 @@ f_r(\omega_i, \omega_o) = k_s \frac{\alpha + 2}{2\pi} (\mathbf{n} \cdot \mathbf{
 $$
 
 **参数说明**：
+
 - $k_s$：镜面反射系数（材质颜色）
 - $(\mathbf{n} \cdot \mathbf{h})^\alpha$：高光强度
 - $\frac{\alpha + 2}{2\pi}$：归一化因子
@@ -287,11 +295,13 @@ vec3 sampleDir(const vec3& wo, const vec3& n) const {
    - $\cos\theta = v^{1/(\alpha+1)}$（极角，Phong分布）
 
 2. **转换到世界坐标系**：
+
    ```cpp
    h = toWorld(h, n);
    ```
 
 3. **根据反射定律计算出射方向**：
+
    ```cpp
    wi = wo - 2(wo·h)h
    ```
@@ -328,11 +338,11 @@ $$
 
 ### Phong 高光参数的影响
 
-| alpha 值 | 高光特性 | 应用场景 |
-|----------|---------|---------|
-| 1-10 | 宽大、柔和的高光 | 塑料、橡胶 |
-| 10-50 | 中等高光 | 油漆、皮革 |
-| 50-200 | 尖锐、明亮的高光 | 金属、玻璃 |
+| alpha 值 | 高光特性         | 应用场景   |
+| -------- | ---------------- | ---------- |
+| 1-10     | 宽大、柔和的高光 | 塑料、橡胶 |
+| 10-50    | 中等高光         | 油漆、皮革 |
+| 50-200   | 尖锐、明亮的高光 | 金属、玻璃 |
 
 ---
 
@@ -343,6 +353,7 @@ $$
 镜面反射是**理想化的镜面反射**，光线只在一个方向上反射，即完美反射方向。
 
 **核心特点**：
+
 - 只有一个反射方向（完美反射定律）
 - 反射角等于入射角
 - 包含Fresnel效应（角度相关的反射率）
@@ -410,6 +421,7 @@ f_r(\omega_i, \omega_o) = \frac{F(\omega_o)}{\cos(\theta_o)}
 $$
 
 其中：
+
 - $F(\omega_o)$ 是Fresnel反射率
 - $\cos(\theta_o) = \mathbf{n} \cdot \omega_o$ 是出射角的余弦
 
@@ -426,11 +438,13 @@ F(\theta) = F_0 + (1 - F_0) (1 - \cos\theta)^5
 $$
 
 **参数说明**：
+
 - $F_0 = \text{radiance}$：垂直入射时的反射率（材质颜色）
 - $\cos\theta = \mathbf{n} \cdot \omega_o$：出射角的余弦
 - $5$：Schlick近似的指数
 
 **为什么是5次方？**
+
 - 这是Schlick提出的经验公式
 - 近似Fresnel方程的精确解
 - 计算效率高，效果好
@@ -439,14 +453,15 @@ $$
 
 Fresnel效应描述了**反射率随角度变化**的现象：
 
-| 入射角 | 反射率 | 现象 |
-|-------|-------|------|
-| 0°（垂直） | $F_0$ | 材质固有反射率 |
-| 30° | $F_0 + 0.5(1-F_0)$ | 反射率增加 |
-| 60° | $F_0 + 0.94(1-F_0)$ | 反射率显著增加 |
-| 90°（掠射） | 1.0 | 几乎完全反射 |
+| 入射角      | 反射率              | 现象           |
+| ----------- | ------------------- | -------------- |
+| 0°（垂直）  | $F_0$               | 材质固有反射率 |
+| 30°         | $F_0 + 0.5(1-F_0)$  | 反射率增加     |
+| 60°         | $F_0 + 0.94(1-F_0)$ | 反射率显著增加 |
+| 90°（掠射） | 1.0                 | 几乎完全反射   |
 
 **实际例子**：
+
 - **水面**：垂直看下去透明，掠射看像镜子
 - **玻璃**：垂直看透明，掠射看反射
 - **金属**：所有角度都有较强反射
