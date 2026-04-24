@@ -13,9 +13,11 @@ struct RtWindowActions {
 struct RtRenderState {
     int currentSample = 0;
     int maxSamples = 100;
+    int maxDepth = 10;
     int samplesPerFrame = 1;
     float elapsTime = 0.0f;
     bool rendering = false;
+    bool debugNormal = false;
 };
 
 class RtImGuiWindow {

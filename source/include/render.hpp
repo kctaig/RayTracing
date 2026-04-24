@@ -29,6 +29,7 @@ class Render {
     void setMaxDepth(const int n) { maxDepth = n; }
     void setModel(const shared_ptr<Model>& m) { model = m; }
     void setNumIter(const int num) { numIter = num; }
+    void setDebugNormalMode(bool enabled) { debugNormalMode = enabled; }
     void BVHBuild();
 
     shared_ptr<Sampler> sampleLight(const PayLoad& payload) const;
@@ -47,4 +48,5 @@ class Render {
     int maxDepth = 5;
     int numIter = 50;
     float rrThreshold = 0.7f;
+    bool debugNormalMode = false;
 };

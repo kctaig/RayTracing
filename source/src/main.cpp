@@ -4,7 +4,6 @@
 #include "imgui_window.hpp"
 #include "render.hpp"
 
-
 int main() {
     std::string sceneDir = "../../datasets/CornellBox";
     std::string fileName = "CornellBox-Sphere";
@@ -20,10 +19,14 @@ int main() {
     renderState.rendering = true;
     renderState.currentSample = 0;
     renderState.maxSamples = 100;
+    renderState.maxDepth = 10;
     renderState.samplesPerFrame = 1;
     renderState.elapsTime = 0.0f;
+    renderState.debugNormal = false;
+    bool lastDebugNormal = renderState.debugNormal;
+    int lastMaxDepth = renderState.maxDepth;
 
-    RtImGuiWindow window(700, 400, "Ray Tracing", sceneDir.c_str(), fileName.c_str());
+    RtImGuiWindow window(1024, 700, "Ray Tracing", sceneDir.c_str(), fileName.c_str());
     auto renderStartTime = std::chrono::high_resolution_clock::now();
 
     while (!window.shouldClose()) {
@@ -35,6 +38,8 @@ int main() {
             fileName = window.getSceneName();
             if (!sceneDir.empty() && !fileName.empty() && fileExists(sceneDir, fileName)) {
                 render = buildRender(sceneDir, fileName);
+                render->setMaxDepth(renderState.maxDepth);
+                render->setDebugNormalMode(renderState.debugNormal);
                 renderState.currentSample = 0;
                 renderState.elapsTime = 0.0f;
                 renderState.rendering = false;
@@ -52,11 +57,32 @@ int main() {
             renderStartTime = std::chrono::high_resolution_clock::now();
         }
 
+        if (renderState.debugNormal != lastDebugNormal) {
+            renderState.currentSample = 0;
+            renderState.elapsTime = 0.0f;
+            renderState.rendering = false;
+            render->film->clear();
+            renderStartTime = std::chrono::high_resolution_clock::now();
+            lastDebugNormal = renderState.debugNormal;
+        }
+
+        if (renderState.maxDepth != lastMaxDepth) {
+            renderState.currentSample = 0;
+            renderState.elapsTime = 0.0f;
+            renderState.rendering = false;
+            render->film->clear();
+            renderStartTime = std::chrono::high_resolution_clock::now();
+            lastMaxDepth = renderState.maxDepth;
+        }
+
+        render->setMaxDepth(renderState.maxDepth);
+        render->setDebugNormalMode(renderState.debugNormal);
+
         if (renderState.rendering) {
             for (int i = 0; i < renderState.samplesPerFrame &&
                             renderState.currentSample < renderState.maxSamples;
                  ++i) {
-                    render->renderOneSample(renderState.currentSample);
+                render->renderOneSample(renderState.currentSample);
                 ++renderState.currentSample;
             }
             if (renderState.currentSample >= renderState.maxSamples) {

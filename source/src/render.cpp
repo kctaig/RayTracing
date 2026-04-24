@@ -124,7 +124,7 @@ void Render::renderOneSample(int sampleIndex) {
         int y = i / w, x = i % w;
         Ray ray = camera->rayCasting(film, {x, y}, jitter);
         PayLoad payload{};
-        const vec3 color = rayTracing(ray, payload, 0);
+        const vec3 color = debugNormalMode ? rayTest(ray) : rayTracing(ray, payload, 0);
         film->addToPixel(x, y, color);
     }
 }

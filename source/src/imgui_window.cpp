@@ -105,7 +105,7 @@ RtWindowActions RtImGuiWindow::renderControls(RtRenderState& state) {
     ImGui::SameLine();
     if (ImGui::Button("Save")) { actions.save = true; }
     ImGui::SameLine();
-    if (ImGui::Button("Import Model")) {
+    if (ImGui::Button("Import")) {
         if (pickSceneXmlFromDialog(
                 sceneDirBuf, sizeof(sceneDirBuf), sceneNameBuf, sizeof(sceneNameBuf)
             )) {
@@ -118,8 +118,10 @@ RtWindowActions RtImGuiWindow::renderControls(RtRenderState& state) {
     ImGui::Text("Scene Dir: %s", sceneDirBuf);
     ImGui::Text("Scene Name: %s", sceneNameBuf);
 
-    ImGui::SliderInt("Max Sample", &state.maxSamples, 1, 1000);
+    ImGui::SliderInt("Max Sample", &state.maxSamples, 1, 3000);
+    ImGui::SliderInt("Max Depth", &state.maxDepth, 1, 32);
     ImGui::SliderInt("Samples / Frame", &state.samplesPerFrame, 1, 8);
+    ImGui::Checkbox("Debug Normal", &state.debugNormal);
     if (state.currentSample >= state.maxSamples) state.rendering = false;
     ImGui::Text("Current Sample:%d", state.currentSample);
     ImGui::Text("Rendering:%s", state.rendering ? "Yes" : "No");
