@@ -1,7 +1,18 @@
 #include "material.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <algorithm>
+#include <cctype>
+
 #include "stb_image.h"
+
+namespace {
+inline float srgbToLinear(float c) {
+    c = glm::clamp(c, 0.0f, 1.0f);
+    if (c <= 0.04045f) return c / 12.92f;
+    return std::pow((c + 0.055f) / 1.055f, 2.4f);
+}
+}  // namespace
 
 Texture::Texture(const string& path, const string& texName) {
     data = stbi_loadf(path.c_str(), &width, &height, &channels, 0);

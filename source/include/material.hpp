@@ -8,12 +8,13 @@ class Texture {
     ~Texture();
     Texture(const string& path, const string& texName);
     vec3 value(const vec2& texCoord) const;
+    bool valid() const;
 
-    float* data;
-    int width;
-    int height;
-    int channels;
-};
+    float* data{nullptr};
+    int width{0};
+    int height{0};
+    int channels{0};
+    bool assumeSrgb{true};
 
 class Material {
   public:
