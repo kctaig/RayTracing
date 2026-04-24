@@ -2,6 +2,7 @@
 
 #include "model.hpp"
 
+
 BBox::BBox(const vector<Vertex>& vertices) {
     min = glm::vec3(FLT_MAX);
     max = glm::vec3(-FLT_MAX);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "head_include.hpp"
 #include "model.hpp"
 
 class Sampler {

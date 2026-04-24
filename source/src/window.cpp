@@ -1,4 +1,4 @@
-#include "imgui_window.hpp"
+#include "window.hpp"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -24,7 +24,8 @@ bool pickSceneXmlFromDialog(
     ofn.lpstrFilter = "XML Scene (*.xml)\0*.xml\0All Files (*.*)\0*.*\0";
     ofn.lpstrFile = filePath;
     ofn.nMaxFile = MAX_PATH;
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+    // 防止导入时路径漂移
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
     ofn.lpstrDefExt = "xml";
 
     if (!GetOpenFileNameA(&ofn)) return false;
@@ -120,7 +121,7 @@ RtWindowActions RtImGuiWindow::renderControls(RtRenderState& state) {
 
     ImGui::SliderInt("Max Sample", &state.maxSamples, 1, 3000);
     ImGui::SliderInt("Max Depth", &state.maxDepth, 1, 32);
-    ImGui::SliderInt("Samples / Frame", &state.samplesPerFrame, 1, 8);
+    ImGui::SliderInt("Samples/Frame", &state.samplesPerFrame, 1, 8);
     ImGui::Checkbox("Debug Normal", &state.debugNormal);
     if (state.currentSample >= state.maxSamples) state.rendering = false;
     ImGui::Text("Current Sample:%d", state.currentSample);

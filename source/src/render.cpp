@@ -3,9 +3,7 @@
 #include "bvh.hpp"
 #include "camera.hpp"
 #include "film.hpp"
-#include "light.hpp"
 #include "material.hpp"
-#include "model.hpp"
 #include "sampler.hpp"
 #include "tinyxml2.h"
 

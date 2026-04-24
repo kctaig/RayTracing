@@ -3,6 +3,7 @@
 #include <numeric>
 #include <stack>
 
+
 BVH::BVH(const vector<shared_ptr<Mesh>>& meshes) : meshes(meshes) {
     indices.resize(meshes.size());
     std::iota(indices.begin(), indices.end(), 0);

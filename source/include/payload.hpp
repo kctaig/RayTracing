@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bsdf.hpp"
-#include "head_include.hpp"
 
 class Mesh;
 

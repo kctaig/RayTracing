@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bbox.hpp"
-#include "head_include.hpp"
 #include "model.hpp"
 
 #define LEAST_NUM_MESH 4

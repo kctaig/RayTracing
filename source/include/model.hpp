@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Ray.hpp"
-#include "head_include.hpp"
 #include "light.hpp"
 #include "payload.hpp"
 

@@ -1,7 +1,6 @@
 #include "model.hpp"
 
 #include "bbox.hpp"
-#include "head_include.hpp"
 #include "material.hpp"
 
 #define TINYOBJLOADER_IMPLEMENTATION

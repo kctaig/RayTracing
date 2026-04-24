@@ -1,8 +1,9 @@
 #include <chrono>
 #include <iostream>
 
-#include "imgui_window.hpp"
 #include "render.hpp"
+#include "window.hpp"
+
 
 int main() {
     const fs::path projectRoot = fs::current_path();
