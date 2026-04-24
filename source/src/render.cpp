@@ -9,6 +9,24 @@
 #include "sampler.hpp"
 #include "tinyxml2.h"
 
+namespace {
+float radicalInverse(int base, int index) {
+    float inverseBase = 1.0f / static_cast<float>(base);
+    float fraction = inverseBase;
+    float result = 0.0f;
+    while (index > 0) {
+        result += static_cast<float>(index % base) * fraction;
+        index /= base;
+        fraction *= inverseBase;
+    }
+    return result;
+}
+
+vec2 halton2D(int index) {
+    return vec2(radicalInverse(2, index), radicalInverse(3, index));
+}
+}  // namespace
+
 Render::Render(const string& sceneDir, const string& fileName) {
     model = std::make_shared<Model>();
     this->fileName = fileName;
@@ -83,7 +101,7 @@ void Render::render() {
     const auto start = std::chrono::high_resolution_clock::now();
 
     while (++ssp < maxNumSample) {
-        renderOneSample();
+        renderOneSample(ssp);
         if (ssp % numIter == 0) {
             auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(
                 std::chrono::high_resolution_clock::now() - start
@@ -95,15 +113,16 @@ void Render::render() {
     }
 }
 
-void Render::renderOneSample() {
+void Render::renderOneSample(int sampleIndex) {
     const auto w = film->width;
     const auto h = film->height;
     const int numPixels = w * h;
+    const vec2 jitter = halton2D(sampleIndex + 1) - vec2(0.5f, 0.5f);
 
 #pragma omp parallel for
     for (int i = 0; i < numPixels; i++) {
         int y = i / w, x = i % w;
-        Ray ray = camera->rayCasting(film, {x, y});
+        Ray ray = camera->rayCasting(film, {x, y}, jitter);
         PayLoad payload{};
         const vec3 color = rayTracing(ray, payload, 0);
         film->addToPixel(x, y, color);

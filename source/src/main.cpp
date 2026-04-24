@@ -56,7 +56,7 @@ int main() {
             for (int i = 0; i < renderState.samplesPerFrame &&
                             renderState.currentSample < renderState.maxSamples;
                  ++i) {
-                render->renderOneSample();
+                    render->renderOneSample(renderState.currentSample);
                 ++renderState.currentSample;
             }
             if (renderState.currentSample >= renderState.maxSamples) {

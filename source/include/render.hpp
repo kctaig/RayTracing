@@ -34,7 +34,7 @@ class Render {
     shared_ptr<Sampler> sampleLight(const PayLoad& payload) const;
 
     void render();
-    void renderOneSample();
+    void renderOneSample(int sampleIndex);
 
     shared_ptr<Camera> camera;
     shared_ptr<Film> film;

@@ -5,14 +5,16 @@
 #include "film.hpp"
 #include "ray.hpp"
 
-Ray Camera::rayCasting(const shared_ptr<Film>& filmPtr, const ivec2& pixelCoord) const {
+Ray Camera::rayCasting(
+    const shared_ptr<Film>& filmPtr, const ivec2& pixelCoord, const vec2& jitter
+) const {
     const float width = static_cast<float>(filmPtr->width);
     const float height = static_cast<float>(filmPtr->height);
     const float aspect = width / height;
 
     const vec3 forward = normalize(lookat - eye);
     const vec3 right = normalize(cross(forward, up));
-    const vec3 up = cross(right, forward);
+    const vec3 camUp = cross(right, forward);
 
     /*
      * 屏幕坐标系统以屏幕的左上角为原点，坐标为 [0,0]。在这个系统中，x 轴的正方向是向右，y
@@ -27,12 +29,12 @@ Ray Camera::rayCasting(const shared_ptr<Film>& filmPtr, const ivec2& pixelCoord)
 
     const float viewportH = std::tan(glm::radians(fovY) * 0.5f) * 2.f;
     const float viewportW = viewportH * aspect;
-    const float screenX = (static_cast<float>(pixelCoord.x) + genRandomFloat()) / width;
-    const float screenY = (static_cast<float>(pixelCoord.y) + genRandomFloat()) / height;
+    const float screenX = (static_cast<float>(pixelCoord.x) + 0.5f + jitter.x) / width;
+    const float screenY = (static_cast<float>(pixelCoord.y) + 0.5f + jitter.y) / height;
 
     const float viewportX = (screenX - 0.5f) * viewportW;
     const float viewportY = ((1.f - screenY) - 0.5f) * viewportH;
-    const vec3 viewportCoord = eye + forward + viewportX * right + viewportY * up;
+    const vec3 viewportCoord = eye + forward + viewportX * right + viewportY * camUp;
     return Ray(eye, normalize(viewportCoord - eye));
 
     /*
