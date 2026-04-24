@@ -31,9 +31,14 @@ bool Mesh::intersection(const Ray& ray, PayLoad& payload) const {
         payload.t = t;
         payload.hitPos = ray.at(t);
         payload.uv = {u, v};
-        // set out normal
-        vec3 n = normalize(getNormal({u, v}));
-        payload.normal = dot(n, D) < 0.f ? n : -n;
+        // geometric normal for robust side tests (reflection/refraction/offset)
+        vec3 gn = normalize(cross(E1, E2));
+        payload.frontFace = dot(gn, D) < 0.f;
+        payload.geomNormal = payload.frontFace ? gn : -gn;
+
+        // shading normal for BRDF evaluation
+        vec3 sn = normalize(getNormal({u, v}));
+        payload.normal = dot(sn, payload.geomNormal) < 0.f ? -sn : sn;
     }
     return isHit;
 }

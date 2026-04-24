@@ -141,7 +141,8 @@ vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 
     currentPayload.initBxDFs();
     shared_ptr<BSDF> bsdf = currentPayload.bsdf;
-    bool sampleBSDF = bsdf->sampleBSDF(wo.getDir(), currentPayload.normal);
+    const vec3 bsdfNormal = currentPayload.normal;
+    bool sampleBSDF = bsdf->sampleBSDF(wo.getDir(), bsdfNormal, currentPayload.frontFace);
 
     // sample light
     auto directLight = vec3(0);
@@ -166,15 +167,19 @@ vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
     // sample BSDF
     auto indirectLight = vec3(0);
     if (sampleBSDF) {
-        vec3 throughput = bsdf->eval * dot(bsdf->wi, currentPayload.normal) / bsdf->pdf;
+        vec3 throughput = bsdf->eval * fabs(dot(bsdf->wi, bsdfNormal)) / bsdf->pdf;
         PayLoad nextPayLoad;
-        vec3 origin = currentPayload.hitPos + currentPayload.normal * EPSILON;
-        if (bool nextHit = intersection(Ray(origin, bsdf->wi), nextPayLoad)) {
+
+        const vec3 sideDecisionNormal =
+            bsdf->perfectSpecular ? currentPayload.geomNormal : currentPayload.normal;
+        const float outgoingSide = dot(bsdf->wi, sideDecisionNormal) > 0.0f ? 1.0f : -1.0f;
+        vec3 rayOrigin = currentPayload.hitPos + outgoingSide * currentPayload.normal * EPSILON;
+        if (bool nextHit = intersection(Ray(rayOrigin, bsdf->wi), nextPayLoad)) {
             // add indirect light
             if (shared_ptr<Light> light = nextPayLoad.mesh->material->light) {
                 indirectLight = throughput * light->getRadiance();
                 if (!bsdf->perfectSpecular) {
-                    vec3 dist = nextPayLoad.hitPos - origin;
+                    vec3 dist = nextPayLoad.hitPos - rayOrigin;
                     float cosTheta = dot(normalize(-dist), nextPayLoad.normal);
                     float lightPdf = dot(dist, dist) / cosTheta / model->calculateLightsArea();
                     float scatWeight = powerHeuristic(bsdf->pdf, lightPdf);
@@ -186,10 +191,9 @@ vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
                     if (genRandomFloat() > rrThreshold) return directLight;
                     throughput /= rrThreshold;
                 }
-                // continue accumlate indirect light
+                // continue accumulate indirect light
                 indirectLight =
-                    throughput *
-                    rayTracing(Ray(currentPayload.hitPos, bsdf->wi), nextPayLoad, depth + 1);
+                    throughput * rayTracing(Ray(rayOrigin, bsdf->wi), nextPayLoad, depth + 1);
             }
         }
     }

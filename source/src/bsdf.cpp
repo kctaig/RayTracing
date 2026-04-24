@@ -10,7 +10,7 @@ vec3 LambertianDiffuseBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) 
     return radiance / M_PI;
 }
 
-vec3 LambertianDiffuseBRDF::sampleDir(const vec3& wo, const vec3& n) const {
+vec3 LambertianDiffuseBRDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace) const {
     // float u = genRandomFloat();
     // float v = genRandomFloat();
     //// float z = std::fabs(1.0f - 2.0f * u);
@@ -53,7 +53,7 @@ vec3 PhongSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) cons
     return radiance * spec * normFactor;
 }
 
-vec3 PhongSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const {
+vec3 PhongSpecularBRDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace) const {
     const float u = genRandomFloat();
     const float v = genRandomFloat();
     const float phi = 2.0f * M_PI * u;
@@ -76,8 +76,62 @@ vec3 MirrorSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) con
     return fresnelSchlick / cosTheta;
 }
 
-vec3 MirrorSpecularBRDF::sampleDir(const vec3& wo, const vec3& n) const {
+vec3 MirrorSpecularBRDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace) const {
     return normalize(wo - 2.0f * dot(wo, n) * n);
+}
+
+vec3 DielectricSpecularBTDF::reflect(const vec3& wo, const vec3& n) const {
+    return normalize(wo - 2.0f * dot(wo, n) * n);
+}
+
+vec3 DielectricSpecularBTDF::refract(const vec3& wo, const vec3& n, float eta) const {
+    float cosThetaI = -dot(wo, n);
+    float sin2ThetaI = 1.0f - cosThetaI * cosThetaI;
+    float sin2ThetaT = eta * eta * sin2ThetaI;
+
+    if (sin2ThetaT > 1.0f) { return vec3(0); }
+
+    float cosThetaT = sqrt(1.0f - sin2ThetaT);
+    return normalize(eta * wo + (eta * cosThetaI - cosThetaT) * n);
+}
+
+float DielectricSpecularBTDF::fresnel(const vec3& wo, const vec3& n, float eta) const {
+    float cosThetaI = -dot(wo, n);
+    float sin2ThetaI = 1.0f - cosThetaI * cosThetaI;
+    float sin2ThetaT = eta * eta * sin2ThetaI;
+
+    if (sin2ThetaT > 1.0f) { return 1.0f; }
+
+    float cosThetaT = sqrt(1.0f - sin2ThetaT);
+
+    float rParl = (eta * cosThetaI - cosThetaT) / (eta * cosThetaI + cosThetaT);
+    float rPerp = (cosThetaI - eta * cosThetaT) / (cosThetaI + eta * cosThetaT);
+
+    return (rParl * rParl + rPerp * rPerp) / 2.0f;
+}
+
+float DielectricSpecularBTDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const {
+    return 1.0f;
+}
+
+vec3 DielectricSpecularBTDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const {
+    return vec3(0);
+}
+
+vec3 DielectricSpecularBTDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace) const {
+    bool entering = frontFace;
+    vec3 normal = entering ? n : -n;
+    float eta = entering ? 1.0f / ior : ior;
+
+    float fr = fresnel(wo, normal, eta);
+
+    if (genRandomFloat() < fr) {
+        return reflect(wo, normal);
+    } else {
+        vec3 refractedDir = refract(wo, normal, eta);
+        if (length(refractedDir) < EPSILON) { return reflect(wo, normal); }
+        return refractedDir;
+    }
 }
 
 void BSDF::generateBSDFWeight() {
@@ -94,11 +148,18 @@ void BSDF::generateBSDFWeight() {
     for (int i = 0; i < luminances.size(); i++) { bxdfs[i]->setWeight(luminances[i] / sum); }
 }
 
-bool BSDF::sampleBSDF(const vec3& wo, const vec3& n) {
+bool BSDF::sampleBSDF(const vec3& wo, const vec3& n, bool frontFace) {
     if (bxdfs.empty()) return false;
-    wi = selectDir(wo, n);
-    eval = accumEval(wo, wi, n);
-    pdf = accumPdf(wo, wi, n);
+    wi = selectDir(wo, n, frontFace);
+    if (perfectSpecular && bxdfs.size() == 1 &&
+        dynamic_cast<DielectricSpecularBTDF*>(bxdfs[0].get()) != nullptr) {
+        const float cosTheta = std::max(EPSILON, fabs(dot(wi, n)));
+        eval = bxdfs[0]->getRadiance() / cosTheta;
+        pdf = 1.0f;
+    } else {
+        eval = accumEval(wo, wi, n);
+        pdf = accumPdf(wo, wi, n);
+    }
     if (pdf < EPSILON) return false;
     return true;
 }
@@ -115,7 +176,7 @@ float BSDF::accumPdf(const vec3& wo, const vec3& wi, const vec3& n) const {
     return res;
 }
 
-vec3 BSDF::selectDir(const vec3& wo, const vec3& n) const {
+vec3 BSDF::selectDir(const vec3& wo, const vec3& n, bool frontFace) const {
     std::vector<float> weiPreSum(bxdfs.size());
     for (int i = 0; i < bxdfs.size(); i++) {
         if (i == 0)
@@ -126,5 +187,5 @@ vec3 BSDF::selectDir(const vec3& wo, const vec3& n) const {
     const float randomValue = genRandomFloat() * weiPreSum.back();
     int idx = 0;
     while (idx < bxdfs.size() && weiPreSum[idx] < randomValue) { idx++; }
-    return bxdfs[idx]->sampleDir(wo, n);
+    return bxdfs[idx]->sampleDir(wo, n, frontFace);
 }
