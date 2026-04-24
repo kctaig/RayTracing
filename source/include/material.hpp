@@ -24,7 +24,7 @@ class Material {
         : matName(name),
           diffuse(kd),
           specular(ks),
-          transparency(tr),
+          transmittance(tr),
           shininess(ns),
           refraIndex(ni) {}
 
@@ -34,7 +34,7 @@ class Material {
 
     vec3 diffuse;
     vec3 specular;
-    vec3 transparency;
+    vec3 transmittance;
     float shininess;
     float refraIndex;
 

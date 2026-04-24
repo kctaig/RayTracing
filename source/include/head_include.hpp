@@ -62,5 +62,5 @@ inline float powerHeuristic(const float pdf1, const float pdf2) {
 inline bool isNAN(const vec3& v) { return v.x != v.x || v.y != v.y || v.z != v.z; }
 
 inline bool fileExists(const std::string& sceneDir, const std::string& fileName) {
-    return fs::exists(fs::path(sceneDir) / fileName / (fileName + ".xml"));
+    return fs::exists(fs::path(sceneDir) / (fileName + ".xml"));
 }
