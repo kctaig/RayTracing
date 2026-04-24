@@ -9,24 +9,6 @@
 #include "sampler.hpp"
 #include "tinyxml2.h"
 
-namespace {
-float radicalInverse(int base, int index) {
-    float inverseBase = 1.0f / static_cast<float>(base);
-    float fraction = inverseBase;
-    float result = 0.0f;
-    while (index > 0) {
-        result += static_cast<float>(index % base) * fraction;
-        index /= base;
-        fraction *= inverseBase;
-    }
-    return result;
-}
-
-vec2 halton2D(int index) {
-    return vec2(radicalInverse(2, index), radicalInverse(3, index));
-}
-}  // namespace
-
 Render::Render(const string& sceneDir, const string& fileName) {
     model = std::make_shared<Model>();
     this->fileName = fileName;
@@ -197,6 +179,7 @@ vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
             // add indirect light
             if (shared_ptr<Light> light = nextPayLoad.mesh->material->light) {
                 indirectLight = throughput * light->getRadiance();
+                // directly return if perfectSpecular
                 if (!bsdf->perfectSpecular) {
                     vec3 dist = nextPayLoad.hitPos - rayOrigin;
                     float cosTheta = dot(normalize(-dist), nextPayLoad.normal);
@@ -224,12 +207,8 @@ vec3 Render::rayTest(const Ray& ray) const {
     if (!intersection(ray, currentPayload)) return vec3(0);
     const shared_ptr<Material> material = currentPayload.mesh->material;
     if (material->light) return material->light->getRadiance();
-    const float cosTheta = -dot(currentPayload.normal, ray.getDir());
-    const vec2 texCoord = currentPayload.mesh->getTexCoord(currentPayload.uv);
-    vec3 diffuse = material->getDiffuse(texCoord);
-    if (cosTheta < EPSILON) return vec3(0);
-    // return cosTheta * diffuse;
-    return currentPayload.normal;
+    const vec3 n = normalize(currentPayload.normal);
+    return 0.5f * (n + vec3(1.0f));
 }
 
 shared_ptr<Sampler> Render::sampleLight(const PayLoad& payload) const {

@@ -1,12 +1,17 @@
 #include "bsdf.hpp"
 
 float LambertianDiffuseBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const {
+    (void)wo;
+
     if (dot(n, wi) < 0.f) return 0.f;
-    // return dot(n, wi) / M_PI;
     return 1.0f / M_PI;
 }
 
 vec3 LambertianDiffuseBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const {
+    (void)wi;
+    (void)wo;
+    (void)n;
+
     return radiance / M_PI;
 }
 
@@ -19,6 +24,9 @@ vec3 LambertianDiffuseBRDF::sampleDir(const vec3& wo, const vec3& n, bool frontF
     // float phi = 2.0f * M_PI * v;
     // vec3 localDir = vec3(r * cos(phi), r * sin(phi), z);
     // return toWorld(localDir, n);
+
+    (void)wo;
+    (void)frontFace;
 
     // reference to PBRT
     vec2 disk;
@@ -54,6 +62,8 @@ vec3 PhongSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) cons
 }
 
 vec3 PhongSpecularBRDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace) const {
+    (void)frontFace;
+
     const float u = genRandomFloat();
     const float v = genRandomFloat();
     const float phi = 2.0f * M_PI * u;
@@ -66,17 +76,23 @@ vec3 PhongSpecularBRDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace)
 }
 
 float MirrorSpecularBRDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const {
+    (void)wo;
+
     if (dot(wi, n) < 0.f) return 0.f;
     return 1.0f;
 }
 
 vec3 MirrorSpecularBRDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const {
+    (void)wo;
+
     const float cosTheta = dot(wi, n);
     const vec3 fresnelSchlick = radiance + (vec3(1.0f) - radiance) * pow(1.0f - cosTheta, 5.0f);
     return fresnelSchlick / cosTheta;
 }
 
 vec3 MirrorSpecularBRDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace) const {
+    (void)frontFace;
+
     return normalize(wo - 2.0f * dot(wo, n) * n);
 }
 
@@ -85,7 +101,7 @@ vec3 DielectricSpecularBTDF::reflect(const vec3& wo, const vec3& n) const {
 }
 
 vec3 DielectricSpecularBTDF::refract(const vec3& wo, const vec3& n, float eta) const {
-    float cosThetaI = -dot(wo, n);
+    float cosThetaI = glm::clamp(-dot(wo, n), -1.0f, 1.0f);
     float sin2ThetaI = 1.0f - cosThetaI * cosThetaI;
     float sin2ThetaT = eta * eta * sin2ThetaI;
 
@@ -96,7 +112,8 @@ vec3 DielectricSpecularBTDF::refract(const vec3& wo, const vec3& n, float eta) c
 }
 
 float DielectricSpecularBTDF::fresnel(const vec3& wo, const vec3& n, float eta) const {
-    float cosThetaI = -dot(wo, n);
+    // 需要限制，否则浮点误差会影响后面的计算
+    float cosThetaI = glm::clamp(-dot(wo, n), -1.0f, 1.0f);
     float sin2ThetaI = 1.0f - cosThetaI * cosThetaI;
     float sin2ThetaT = eta * eta * sin2ThetaI;
 
@@ -111,31 +128,36 @@ float DielectricSpecularBTDF::fresnel(const vec3& wo, const vec3& n, float eta) 
 }
 
 float DielectricSpecularBTDF::pdf(const vec3& wo, const vec3& wi, const vec3& n) const {
+    (void)wi;
+    (void)wo;
+    (void)n;
+
     return 1.0f;
 }
 
 vec3 DielectricSpecularBTDF::eval(const vec3& wo, const vec3& wi, const vec3& n) const {
-    return vec3(0);
+    (void)wo;
+    (void)wi;
+    (void)n;
+
+    return vec3(0.f);
 }
 
 vec3 DielectricSpecularBTDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace) const {
     bool entering = frontFace;
-    vec3 normal = entering ? n : -n;
+    // `n` is already oriented to oppose `wo` in intersection code, so keep it as-is.
+    vec3 normal = n;
     float eta = entering ? 1.0f / ior : ior;
 
-    float fr = fresnel(wo, normal, eta);
+    float fr = glm::clamp(fresnel(wo, normal, eta), 0.0f, 1.0f);
+    vec3 refractedDir = refract(wo, normal, eta);
 
-    if (genRandomFloat() < fr) {
-        return reflect(wo, normal);
-    } else {
-        vec3 refractedDir = refract(wo, normal, eta);
-        if (length(refractedDir) < EPSILON) { return reflect(wo, normal); }
-        return refractedDir;
-    }
+    if (genRandomFloat() >= fr && length(refractedDir) > EPSILON) return refractedDir;
+
+    return reflect(wo, normal);
 }
 
 void BSDF::generateBSDFWeight() {
-    constexpr vec3 cie1931Weights(0.212671f, 0.715160f, 0.072169f);
     float sum = 0.f;
     vector<float> luminances;
     for (shared_ptr<BxDF>& bxdfptr : bxdfs) {
@@ -150,9 +172,9 @@ void BSDF::generateBSDFWeight() {
 
 bool BSDF::sampleBSDF(const vec3& wo, const vec3& n, bool frontFace) {
     if (bxdfs.empty()) return false;
-    wi = selectDir(wo, n, frontFace);
-    if (perfectSpecular && bxdfs.size() == 1 &&
-        dynamic_cast<DielectricSpecularBTDF*>(bxdfs[0].get()) != nullptr) {
+    wi = sampleDir(wo, n, frontFace);
+    // specularMirror or transmissive
+    if (perfectSpecular && bxdfs.size() == 1) {
         const float cosTheta = std::max(EPSILON, fabs(dot(wi, n)));
         eval = bxdfs[0]->getRadiance() / cosTheta;
         pdf = 1.0f;
@@ -176,7 +198,7 @@ float BSDF::accumPdf(const vec3& wo, const vec3& wi, const vec3& n) const {
     return res;
 }
 
-vec3 BSDF::selectDir(const vec3& wo, const vec3& n, bool frontFace) const {
+vec3 BSDF::sampleDir(const vec3& wo, const vec3& n, bool frontFace) const {
     std::vector<float> weiPreSum(bxdfs.size());
     for (int i = 0; i < bxdfs.size(); i++) {
         if (i == 0)

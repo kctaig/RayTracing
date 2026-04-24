@@ -66,7 +66,7 @@ class BSDF {
     bool sampleBSDF(const vec3& wo, const vec3& n, bool frontFace);
     vec3 accumEval(const vec3& wo, const vec3& wi, const vec3& n) const;
     float accumPdf(const vec3& wo, const vec3& wi, const vec3& n) const;
-    vec3 selectDir(const vec3& wo, const vec3& n, bool frontFace) const;
+    vec3 sampleDir(const vec3& wo, const vec3& n, bool frontFace) const;
 
     bool perfectSpecular{false};
     float pdf{0.f};
