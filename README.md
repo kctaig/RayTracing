@@ -215,5 +215,11 @@ int buildNode(int start, int end) {
 ## TODO
 
 - Oren-Nayar 漫反射、次表面散射、体积散射等更复杂的 BxDF
+  - 修改material、light、texture，bxdf类
+    - 采用Metal/Roughness工作流。
+    - 自底向上实现BxDF库：已实现Lambertian (Diffuse)、，待实现 Microfacet (GGX Specular)、Fresnel (Schlick Approximation)。
+    - 实现Principled BSDF：基于上述函数，聚合出一个支持 BaseColor, Metallic, Roughness, Specular, IOR 的Uber Shader。
+    - 支持纹理重载：所有的材质参数，都必须能无缝切换为Constant值或被一张2D纹理驱动。
+    - 动态组合：对于需要高性能或极致效果的系统，可以根据材质的Metallic等属性，在运行时动态剔除不可能用到的BxDF组件（例如金属不需要计算漫反射），以提高性能。
 - 双向路径追踪或者 Metropolis Light Transport 等更高级的路径追踪算法
 - 重要性采样 ReSTIR 等更高效的采样方法

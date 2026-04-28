@@ -9,6 +9,7 @@ class BVH;
 class Ray;
 class PayLoad;
 class Sampler;
+class Light;
 
 class Render {
   public:
@@ -41,6 +42,7 @@ class Render {
     shared_ptr<Film> film;
     shared_ptr<Model> model;
     shared_ptr<BVH> bvh;
+    shared_ptr<Light> light;
 
   private:
     string fileName;

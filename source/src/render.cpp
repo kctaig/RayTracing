@@ -3,12 +3,13 @@
 #include "bvh.hpp"
 #include "camera.hpp"
 #include "film.hpp"
+#include "light.hpp"
 #include "material.hpp"
 #include "sampler.hpp"
 #include "tinyxml2.h"
 
 Render::Render(const string& sceneDir, const string& fileName) {
-    model = std::make_shared<Model>();
+    model = make_shared<Model>();
     this->fileName = fileName;
 
     using namespace tinyxml2;
@@ -46,17 +47,14 @@ Render::Render(const string& sceneDir, const string& fileName) {
             upElement->FloatAttribute("z")
         );
 
-        film = std::make_shared<Film>(width, height);
-        camera = std::make_shared<Camera>(eye, lookat, up, fovY);
+        film = make_shared<Film>(width, height);
+        camera = make_shared<Camera>(eye, lookat, up, fovY);
     }
 
     // read light
     for (XMLElement* lightElement = doc.FirstChildElement("light"); lightElement != nullptr;
          lightElement = lightElement->NextSiblingElement("light")) {
-        auto light = std::make_shared<Light>();
-        if (const char* matName = lightElement->Attribute("mtlname")) {
-            light->setMatName(matName);
-        }
+        auto newlight = make_shared<Light>();
         if (const char* radiance = lightElement->Attribute("radiance")) {
             std::stringstream ss(radiance);
             vec3 radianceToVec3;
@@ -65,9 +63,9 @@ Render::Render(const string& sceneDir, const string& fileName) {
             ss >> radianceToVec3.g;
             ss.ignore(1, ',');
             ss >> radianceToVec3.b;
-            light->setRadiance(radianceToVec3);
+            newlight->setRadiance(radianceToVec3);
         }
-        model->addLight(light);
+        model->addLight(newlight);
     }
 
     // add model
@@ -124,7 +122,7 @@ void Render::renderOneSample(int sampleIndex) {
 
 void Render::BVHBuild() {
     const auto start = std::chrono::high_resolution_clock::now();
-    bvh = std::make_shared<BVH>(model->getMesh());
+    bvh = make_shared<BVH>(model->getMesh());
     const auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::high_resolution_clock::now() - start
     );
@@ -148,8 +146,7 @@ vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
     if (depth == 0 && !intersection(wo, currentPayload) || depth >= maxDepth) return vec3(0);
 
     // hit the light, directly return the radiance
-    if (currentPayload.mesh->material->light)
-        return currentPayload.mesh->material->light->getRadiance();
+    if (currentPayload.mesh->light) return currentPayload.mesh->light->getRadiance();
 
     currentPayload.initBxDFs();
     shared_ptr<BSDF> bsdf = currentPayload.bsdf;
@@ -168,7 +165,9 @@ vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
                 lightPdf, bsdf->accumPdf(wo.getDir(), lightDir, currentPayload.normal)
             );
             if (lightWeight > EPSILON) {
-                vec3 LightEmission = lightSamplerPtr->getMeshPtr()->material->light->getRadiance();
+                vec3 LightEmission(0.0f);
+                if (lightSamplerPtr->getMeshPtr()->light)
+                    LightEmission = lightSamplerPtr->getMeshPtr()->light->getRadiance();
                 vec3 lightEval = bsdf->accumEval(wo.getDir(), lightDir, currentPayload.normal);
                 directLight = LightEmission * lightEval * lightWeight *
                               dot(lightDir, currentPayload.normal) / lightPdf;
@@ -183,16 +182,16 @@ vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
         PayLoad nextPayLoad;
 
         const vec3 sideDecisionNormal =
-            bsdf->perfectSpecular ? currentPayload.geomNormal : currentPayload.normal;
+            bsdf->perfectSpecular ? currentPayload.geoNormal : currentPayload.normal;
         const float outgoingSide = dot(bsdf->wi, sideDecisionNormal) > 0.0f ? 1.0f : -1.0f;
-        vec3 rayOrigin = currentPayload.hitPos + outgoingSide * currentPayload.normal * EPSILON;
+        vec3 rayOrigin = currentPayload.pos + outgoingSide * currentPayload.normal * EPSILON;
         if (bool nextHit = intersection(Ray(rayOrigin, bsdf->wi), nextPayLoad)) {
             // add indirect light
-            if (shared_ptr<Light> light = nextPayLoad.mesh->material->light) {
-                indirectLight = throughput * light->getRadiance();
+            if (nextPayLoad.mesh->light) {
+                indirectLight = throughput * nextPayLoad.mesh->light->getRadiance();
                 // directly return if perfectSpecular
                 if (!bsdf->perfectSpecular) {
-                    vec3 dist = nextPayLoad.hitPos - rayOrigin;
+                    vec3 dist = nextPayLoad.pos - rayOrigin;
                     float cosTheta = dot(normalize(-dist), nextPayLoad.normal);
                     float lightPdf = dot(dist, dist) / cosTheta / model->calculateLightsArea();
                     float scatWeight = powerHeuristic(bsdf->pdf, lightPdf);
@@ -216,27 +215,26 @@ vec3 Render::rayTracing(const Ray& wo, PayLoad& currentPayload, int depth) {
 vec3 Render::rayTest(const Ray& ray) const {
     PayLoad currentPayload;
     if (!intersection(ray, currentPayload)) return vec3(0);
-    const shared_ptr<Material> material = currentPayload.mesh->material;
-    if (material->light) return material->light->getRadiance();
+    if (currentPayload.mesh->light) return currentPayload.mesh->light->getRadiance();
     const vec3 n = normalize(currentPayload.normal);
     return 0.5f * (n + vec3(1.0f));
 }
 
 shared_ptr<Sampler> Render::sampleLight(const PayLoad& payload) const {
-    auto samplerPtr = std::make_shared<Sampler>();
+    auto samplerPtr = make_shared<Sampler>();
 
     // select a light
-    const shared_ptr<Light> light = model->randomSelectLight();
+    const shared_ptr<Light> selectedLight = model->randomSelectLight();
     // select a point on the light
-    int meshIdx = static_cast<int>(genRandomFloat() * light->getMeshes().size());
-    meshIdx = meshIdx % light->getMeshes().size();
-    const shared_ptr<Mesh> mesh = light->getMeshes()[meshIdx];
+    int meshIdx = static_cast<int>(genRandomFloat() * selectedLight->getMeshes().size());
+    meshIdx = meshIdx % selectedLight->getMeshes().size();
+    const shared_ptr<Mesh> mesh = selectedLight->getMeshes()[meshIdx];
     // sample a point on the light
     const vec3 weights = samplerPtr->weightSamplingOnMesh();
     const vec3 lightPos = mesh->vertices[0].pos * weights.x + mesh->vertices[1].pos * weights.y +
                           mesh->vertices[2].pos * weights.z;
 
-    const vec3 lightDir = normalize(lightPos - payload.hitPos);
+    const vec3 lightDir = normalize(lightPos - payload.pos);
 
     //  the light in back face
     if (dot(lightDir, payload.normal) < EPSILON) return nullptr;
@@ -244,12 +242,12 @@ shared_ptr<Sampler> Render::sampleLight(const PayLoad& payload) const {
     PayLoad lightPayload;
 
     // judge the light point is visible
-    const vec3 origin = payload.hitPos + payload.normal * EPSILON;
+    const vec3 origin = payload.pos + payload.normal * EPSILON;
     if (bool isHit = intersection(Ray(origin, lightDir), lightPayload);
         !isHit || dot(-lightDir, lightPayload.normal) < EPSILON)
         return nullptr;
-    const float hitDist = glm::length(payload.hitPos - lightPayload.hitPos);
-    const float lightDist = glm::length(payload.hitPos - lightPos);
+    const float hitDist = glm::length(payload.pos - lightPayload.pos);
+    const float lightDist = glm::length(payload.pos - lightPos);
     if (fabs(hitDist - lightDist) > 0.01) return nullptr;
 
     const float lightPdf = lightDist * lightDist / fabs(dot(lightPayload.normal, -lightDir)) /
@@ -258,6 +256,6 @@ shared_ptr<Sampler> Render::sampleLight(const PayLoad& payload) const {
     samplerPtr->setPdf(lightPdf);
     samplerPtr->setPos(lightDir);
     samplerPtr->setMeshPtr(mesh);
-    samplerPtr->setPayloadPtr(std::make_shared<PayLoad>(lightPayload));
+    samplerPtr->setPayloadPtr(make_shared<PayLoad>(lightPayload));
     return samplerPtr;
 }

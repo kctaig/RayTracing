@@ -9,6 +9,7 @@ class BxDF {
     virtual float pdf(const vec3& wo, const vec3& wi, const vec3& n) const = 0;
     virtual vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const = 0;
     virtual vec3 sampleDir(const vec3& wo, const vec3& n, bool frontFace) const = 0;
+    virtual bool isDelta() const { return false; }
     vec3 getRadiance() const { return radiance; }
     float getWeight() const { return weight; }
 
@@ -44,6 +45,7 @@ class MirrorSpecularBRDF : public BxDF {
     float pdf(const vec3& wo, const vec3& wi, const vec3& n) const override;
     vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const override;
     vec3 sampleDir(const vec3& wo, const vec3& n, bool frontFace) const override;
+    bool isDelta() const override { return true; }
 };
 
 class DielectricSpecularBTDF : public BxDF {
@@ -52,6 +54,7 @@ class DielectricSpecularBTDF : public BxDF {
     float pdf(const vec3& wo, const vec3& wi, const vec3& n) const override;
     vec3 eval(const vec3& wo, const vec3& wi, const vec3& n) const override;
     vec3 sampleDir(const vec3& wo, const vec3& n, bool frontFace) const override;
+    bool isDelta() const override { return true; }
 
   private:
     float ior;
@@ -72,5 +75,6 @@ class BSDF {
     float pdf{0.f};
     vec3 eval{0.f};
     vec3 wi{0.f};
+    int sampledBxdfIndex{-1};
     vector<shared_ptr<BxDF>> bxdfs;
 };

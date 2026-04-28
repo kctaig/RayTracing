@@ -157,6 +157,7 @@ vec3 DielectricSpecularBTDF::sampleDir(const vec3& wo, const vec3& n, bool front
     return reflect(wo, normal);
 }
 
+// 遍历所有bxdf lobe，取亮度作为weight，再归一化
 void BSDF::generateBSDFWeight() {
     float sum = 0.f;
     vector<float> luminances;
@@ -172,15 +173,35 @@ void BSDF::generateBSDFWeight() {
 
 bool BSDF::sampleBSDF(const vec3& wo, const vec3& n, bool frontFace) {
     if (bxdfs.empty()) return false;
-    wi = sampleDir(wo, n, frontFace);
+    std::vector<float> weiPreSum(bxdfs.size());
+    for (int i = 0; i < bxdfs.size(); i++) {
+        if (i == 0)
+            weiPreSum[i] = bxdfs[i]->getWeight();
+        else
+            weiPreSum[i] = weiPreSum[i - 1] + bxdfs[i]->getWeight();
+    }
+
+    const float randomValue = genRandomFloat() * weiPreSum.back();
+    int idx = 0;
+    while (idx < bxdfs.size() && weiPreSum[idx] < randomValue) { idx++; }
+
+    auto sampledBxdf = bxdfs[idx];
+    wi = sampledBxdf->sampleDir(wo, n, frontFace);
+
     // specularMirror or transmissive
     if (perfectSpecular && bxdfs.size() == 1) {
         const float cosTheta = std::max(EPSILON, fabs(dot(wi, n)));
-        eval = bxdfs[0]->getRadiance() / cosTheta;
+        eval = sampledBxdf->getRadiance() / cosTheta;
         pdf = 1.0f;
     } else {
-        eval = accumEval(wo, wi, n);
         pdf = accumPdf(wo, wi, n);
+
+        if (dynamic_cast<DielectricSpecularBTDF*>(sampledBxdf.get()) != nullptr) {
+            const float cosTheta = std::max(EPSILON, fabs(dot(wi, n)));
+            eval = sampledBxdf->getRadiance() / cosTheta;
+        } else {
+            eval = accumEval(wo, wi, n);
+        }
     }
     if (pdf < EPSILON) return false;
     return true;

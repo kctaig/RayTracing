@@ -5,6 +5,7 @@
 #include <glm.hpp>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <string>
@@ -19,9 +20,11 @@ using glm::vec2;
 using glm::vec3;
 using glm::vec4;
 
+using std::cerr;
 using std::cout;
 using std::endl;
 using std::make_shared;
+using std::optional;
 using std::shared_ptr;
 using std::string;
 using std::vector;
@@ -77,6 +80,12 @@ inline float radicalInverse(int base, int index) {
         fraction *= inverseBase;
     }
     return result;
+}
+
+inline float srgbToLinear(float c) {
+    c = glm::clamp(c, 0.0f, 1.0f);
+    if (c <= 0.04045f) return c / 12.92f;
+    return std::pow((c + 0.055f) / 1.055f, 2.4f);
 }
 
 inline vec2 halton2D(int index) { return vec2(radicalInverse(2, index), radicalInverse(3, index)); }

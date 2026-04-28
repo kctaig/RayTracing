@@ -1,15 +1,18 @@
 #pragma once
 
-#include "light.hpp"
+#include "utils.hpp"
 
 class Texture {
   public:
     Texture() = default;
-    ~Texture();
     Texture(const string& path, const string& texName);
-    vec3 value(const vec2& texCoord) const;
+
+    ~Texture();
+
+    vec3 value(const vec2& uv) const;
     bool valid() const;
 
+  private:
     float* data{nullptr};
     int width{0};
     int height{0};
@@ -17,33 +20,54 @@ class Texture {
     bool assumeSrgb{true};
 };
 
+template <typename T>
+struct MaterialParam {
+    MaterialParam() = default;
+    explicit MaterialParam(const T& v) : value(v) {}
+
+    T value{0};
+    shared_ptr<Texture> texture;
+    bool useTexture{false};
+
+    T sample(const vec2& uv) const;
+};
+
+template <>
+inline vec3 MaterialParam<vec3>::sample(const vec2& uv) const {
+    if (useTexture && texture && texture->valid()) { return texture->value(uv); }
+    return value;
+}
+
+template <>
+inline float MaterialParam<float>::sample(const vec2& uv) const {
+    if (useTexture && texture && texture->valid()) { return texture->value(uv).x; }
+    return value;
+}
+
 class Material {
   public:
     Material() = default;
 
-    Material(string name, vec3 kd, vec3 ks, vec3 tr, float ns, float ni)
-        : matName(name),
-          diffuse(kd),
-          specular(ks),
-          transmittance(tr),
-          shininess(ns),
-          refraIndex(ni) {}
+    Material(vec3 kd, vec3 ks, vec3 tr, float ns, float ni)
+        : baseColor(kd), specular(ks), transmission(tr), roughness(ns), ior(ni) {}
 
-    vec3 getDiffuse(const vec2& texCoord) const;
-    vec3 getSpecular(const vec2& texCoord) const;
+    void evaluate(const vec2& uv) const;
 
-    string matName;
+    MaterialParam<vec3> baseColor{};
+    MaterialParam<vec3> specular{};
+    MaterialParam<vec3> transmission{};
+    MaterialParam<vec3> emission{};
+    MaterialParam<float> metallic{};
+    MaterialParam<float> roughness{0};
+    MaterialParam<float> sheen{0};
+    MaterialParam<float> ior{0};
 
-    vec3 diffuse;
-    vec3 specular;
-    vec3 transmittance;
-    float shininess;
-    float refraIndex;
-
-    shared_ptr<Light> light;
-
-    bool useTexture = false;
-    shared_ptr<Texture> texture;
-    bool useSpecularTexture = false;
-    shared_ptr<Texture> specularTexture;
+    // Auxiliary maps kept for future shading extensions.
+    shared_ptr<Texture> ambientTex;
+    shared_ptr<Texture> specularHighlightTex;
+    shared_ptr<Texture> bumpTex;
+    shared_ptr<Texture> displacementTex;
+    shared_ptr<Texture> alphaTex;
+    shared_ptr<Texture> reflectionTex;
+    shared_ptr<Texture> normalTex;
 };

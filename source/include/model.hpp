@@ -21,14 +21,15 @@ class Vertex {
 class Mesh {
   public:
     bool intersection(const Ray& ray, PayLoad& payload) const;
-    float calculateArea() const;
 
+    float calculateArea() const;
     vec2 getTexCoord(const vec2& uv) const;
-    vec3 getNormal(const vec2& uv) const;
+    vec3 calculateNormal(const vec2& uv) const;
 
     vector<Vertex> vertices;
     shared_ptr<BBox> bboxPtr;
     shared_ptr<Material> material;
+    shared_ptr<Light> light;
 };
 
 class Model {
@@ -45,7 +46,7 @@ class Model {
     auto& getMaterial() { return materials; }
     const auto& getMaterial() const { return materials; }
 
-    void addLight(const shared_ptr<Light>& light) { lights.push_back(std::move(light)); }
+    void addLight(const shared_ptr<Light>& light) { lights.push_back(light); }
 
     shared_ptr<Light> randomSelectLight() const;
 
